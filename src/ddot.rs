@@ -17,7 +17,8 @@ pub fn ddot_idiomatic(x: &Vec<f64>, y: &Vec<f64>) -> f64 {
     if std::ptr::eq(x, y) {
         x.iter().map(|x| x * x).sum()
     } else {
-        x.iter().zip(y.iter()).map(|(x, y)| x * y).sum()
+        x.iter().zip(y.iter())
+            .map(|(x, y)| x * y).sum()
     }
 }
 
