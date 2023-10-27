@@ -1,6 +1,7 @@
 mod ddot;
 mod compute_residual;
 mod waxpby;
+mod hpc_sparse_matrix;
 
 use ddot::ddot_idiomatic;
 use compute_residual::compute_residual_idiomatic;
