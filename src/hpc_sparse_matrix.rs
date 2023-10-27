@@ -66,15 +66,15 @@ impl HpcSparseMatrix<'_> {
 
         // Allocate arrays that are of length local_nnz
         // Either, we do reference counting, or we make the data structure less insane
-        let mut list_of_vals = vec![0.0; local_nnz as usize];
-        let mut list_of_inds = vec![0; local_nnz as usize];
+        let mut list_of_vals: Vec<f64> = Vec::with_capacity(local_nnz as usize); // vec![0.0; local_nnz as usize];
+        let mut list_of_inds: Vec<i32> = Vec::with_capacity(local_nnz as usize); // vec![0; local_nnz as usize];
 
         let mut curvalind: usize = 0;
         // let curvalptr: &f64 = &list_of_vals[curvalind];
         let mut curindind: usize = 0;
         // let curindptr: &i32 = &list_of_inds[curindind];
 
-        let mut nnzglobal: i64 = 0;
+        // let mut nnzglobal: i64 = 0;
         for iz in 0..nz {
             for iy in 0..ny {
                 for ix in 0..nx {
@@ -112,7 +112,7 @@ impl HpcSparseMatrix<'_> {
                         }
                     }
                     nnz_in_row[curlocalrow] = nnzrow;
-                    nnzglobal += nnzrow;
+                    // nnzglobal += nnzrow;
                     x[curlocalrow] = 0.0;
                     b[curlocalrow] = 27.0 - ((nnzrow-1) as f64);
                     xexact[curlocalrow] = 1.0;
@@ -131,8 +131,8 @@ impl HpcSparseMatrix<'_> {
             local_ncol: local_nrow,
             local_nnz,
             nnz_in_row,
-            ptr_to_vals_in_row,
-            ptr_to_inds_in_row,
+            ptr_to_vals_in_row: ptr_to_vals_in_row.clone(),
+            ptr_to_inds_in_row: ptr_to_inds_in_row.clone(),
             ptr_to_diags,
             list_of_vals: list_of_vals.clone(),
             list_of_inds: list_of_inds.clone(),

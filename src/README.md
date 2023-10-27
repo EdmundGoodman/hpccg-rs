@@ -31,3 +31,12 @@ For each file:
 - Direct translation
 - Idiomatic translation
 - Unit tests in Rust for translated Rust code
+
+
+## Notes
+
+### Matrix generation
+
+- Data structure is very dependent on interlinked arrays of pointers - could this be changed?
+- `nnzglobal` is a completely unused variable!
+- Consider re-writing c++ version to keep track of indices not pointers where possible?

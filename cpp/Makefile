@@ -47,8 +47,8 @@
 #
 # 0) Specify compiler and linker:
 
-CXX=/usr/local/bin/g++
-LINKER=/usr/local/bin/g++
+CXX=/usr/bin/g++
+LINKER=/usr/bin/g++
 #CXX=mpicxx
 #LINKER=mpicxx
 
