@@ -27,14 +27,20 @@
 
 ## Output goals
 
-For each file:
+### For each translated rust file
 
 - Direct translation
 - Idiomatic translation
 - Unit tests in Rust for translated Rust code
 
+### For the input C++ files
+
+- Write documentation
+- Give variables less monosyllabic names (shorter variable names don't make your code go faster!!!)
+- Could PR or make more sane public fork explaining what things actually do?
 
 ## Notes
+
 
 ### Matrix generation
 

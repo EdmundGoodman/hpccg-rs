@@ -4,11 +4,12 @@ pub mod waxpby;
 pub mod hpc_sparse_matrix;
 pub mod sparsemv;
 pub mod mytimer;
+mod hpccg;
 
 use ddot::ddot_idiomatic;
 use compute_residual::compute_residual_idiomatic;
 use waxpby::waxpby_idiomatic;
-
+use crate::mytimer::mytimer;
 
 fn main() {
     let vx = vec![1.0,2.0,3.0];
