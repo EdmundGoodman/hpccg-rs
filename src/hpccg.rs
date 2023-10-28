@@ -76,12 +76,12 @@ pub fn hpccg_direct(
     rtrans = ddot_idiomatic(&r, &r);
     tock(&t0, &mut t1);
 
-    *normr = normr.sqrt();
+    *normr = rtrans.sqrt();
 
-    println!("Initial Residual = {normr}");
+    println!("Initial Residual = {normr:.4}");
 
     for k in 1..max_iter {
-        if *normr > tolerance {
+        if *normr <= tolerance {
             break;
         }
 
@@ -99,9 +99,9 @@ pub fn hpccg_direct(
             tock(&t0, &mut t2);
         }
 
-        *normr = normr.sqrt();
+        *normr = rtrans.sqrt();
         if k%print_freq == 0 || k+1 == max_iter {
-            println!("Iteration = {k} , Residual = {normr}");
+            println!("Iteration = {k} , Residual = {normr:.4}");
         }
 
         tick(&mut t0);
