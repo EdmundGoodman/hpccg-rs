@@ -12,9 +12,9 @@
 - Data structure dependents
   - [x] `HPC_sparsemv.cpp`
 - Driver code
+  - [x] `mytimer.cpp`
   - [ ] `HPCCG.cpp`
   - [ ] `main.cpp`
-  - [ ] `mytimer.cpp`
 
 - Output format
   - [ ] `Yaml_Doc.cpp`

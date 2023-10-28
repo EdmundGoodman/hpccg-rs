@@ -3,6 +3,7 @@ pub mod compute_residual;
 pub mod waxpby;
 pub mod hpc_sparse_matrix;
 pub mod sparsemv;
+pub mod mytimer;
 
 use ddot::ddot_idiomatic;
 use compute_residual::compute_residual_idiomatic;
