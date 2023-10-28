@@ -4,36 +4,36 @@ use std::cell::RefCell;
 /// A data structure representing a sparse matrix mesh
 #[derive(Debug)]
 #[allow(dead_code)]
-struct HpcSparseMatrix {
+pub struct HpcSparseMatrix {
     /// The row to start generating the matrix from (always `0` in serial mode)
-    start_row: i32,
+    pub start_row: i32,
     /// The row to stop generating the matrix at (always `x*y*z-1` in serial mode)
-    stop_row: i32,
+    pub stop_row: i32,
     /// The total volume of the matrix (always equal to `local_nrow` in serial mode)
-    total_nrow: i32,
+    pub total_nrow: i32,
     /// The total number of non-zeroes (always equal to `local_nnz` in serial mode)
-    total_nnz: i32,
+    pub total_nnz: i32,
     /// The local volume of the matrix, calculated as `x*y*z` in serial mode
-    local_nrow: i32,
+    pub local_nrow: i32,
     /// A variable only used in MPI mode (set to `local_nrow` in serial mode)
-    local_ncol: i32,
+    pub local_ncol: i32,
     /// The local number of non-zero values, approximated as `local_nrow*27`
-    local_nnz: i32,
+    pub local_nnz: i32,
     /// A vector containing the number of non-zeroes in each row
-    nnz_in_row: Vec<i64>,
+    pub nnz_in_row: Vec<i64>,
     // TODO: Could these be cleaned up as raw values?
     /// A vector of pointers to values
-    ptr_to_vals_in_row: Vec<Rc<RefCell<f64>>>,
+    pub ptr_to_vals_in_row: Vec<Rc<RefCell<f64>>>,
     /// A vector of pointers to indices
-    ptr_to_inds_in_row: Vec<Rc<RefCell<i32>>>,
+    pub ptr_to_inds_in_row: Vec<Rc<RefCell<i32>>>,
     /// A vector of pointers to diagonals
-    ptr_to_diags: Vec<Rc<RefCell<f64>>>,
+    pub ptr_to_diags: Vec<Rc<RefCell<f64>>>,
     // Needed for cleaning up memory (in C++)
-    // TODO: Could these be discarded?
+    // TODO: Could these be discarded? (at least needn't be public?)
     /// A vector of values stored in the matrix
-    list_of_vals: Vec<Rc<RefCell<f64>>>,
+    pub list_of_vals: Vec<Rc<RefCell<f64>>>,
     /// A vector of indices into the matrix
-    list_of_inds: Vec<Rc<RefCell<i32>>>,
+    pub list_of_inds: Vec<Rc<RefCell<i32>>>,
 }
 
 // TODO: Conversion from sparse matrix into pure matrix representation
@@ -52,7 +52,7 @@ impl HpcSparseMatrix {
     ///  * `guess` - Inital guess for the mesh
     ///  * `rhs` - Right hand side
     ///  * `exact` - Exact solution (as computed by a direct solver)
-    fn generate_matrix(nx: i32, ny: i32, nz: i32) -> (HpcSparseMatrix, Vec<f64>, Vec<f64>, Vec<f64>) {
+    pub fn generate_matrix(nx: i32, ny: i32, nz: i32) -> (HpcSparseMatrix, Vec<f64>, Vec<f64>, Vec<f64>) {
         let use_7pt_stencil = false;
 
         // The size of our sub-block (must be non-zero)

@@ -10,6 +10,7 @@ pub fn ddot_direct(n: usize, x: &[f64], y: &[f64], result: &mut f64) -> u32 {
         }
     }
     *result = local_result;
+    // TODO: Change all instances to just `0`
     return 0;
 }
 

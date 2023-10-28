@@ -1,11 +1,13 @@
-mod ddot;
-mod compute_residual;
-mod waxpby;
-mod hpc_sparse_matrix;
+pub mod ddot;
+pub mod compute_residual;
+pub mod waxpby;
+pub mod hpc_sparse_matrix;
+pub mod sparsemv;
 
 use ddot::ddot_idiomatic;
 use compute_residual::compute_residual_idiomatic;
 use waxpby::waxpby_idiomatic;
+
 
 fn main() {
     let vx = vec![1.0,2.0,3.0];

@@ -7,15 +7,15 @@
   - [x] `compute_residual.cpp`
   - [x] `waxpby.cpp`
 - Data structure
-  - [ ] `HPC_Sparse_Matrix.cpp`
-  - [ ] `generate_matrix.cpp`
+  - [x] `HPC_Sparse_Matrix.cpp`
+  - [x] `generate_matrix.cpp`
 - Data structure dependents
-  - [ ] `HPC_sparsemv.cpp`
-  - [ ] `read_HPC_row.cpp`
+  - [x] `HPC_sparsemv.cpp`
 - Driver code
   - [ ] `HPCCG.cpp`
   - [ ] `main.cpp`
   - [ ] `mytimer.cpp`
+
 - Output format
   - [ ] `Yaml_Doc.cpp`
   - [ ] `Yaml_Element.cpp`
@@ -23,6 +23,7 @@
   - [x] `dump_matlab_matrix.cpp` (Unused data format)
   - [x] `exchange_externals.cpp` (Only required for MPI)
   - [x] `make_local_matrix.cpp` (Only required for MPI)
+  - [ ] `read_HPC_row.cpp` (Only required for pre-generated matrices)
 
 ## Output goals
 
