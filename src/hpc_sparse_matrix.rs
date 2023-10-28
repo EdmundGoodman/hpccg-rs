@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::cell::RefCell;
 
 #[derive(Debug)]
 struct HpcSparseMatrix<'a> {
@@ -11,12 +12,12 @@ struct HpcSparseMatrix<'a> {
     local_ncol: i32,
     local_nnz: i32,
     nnz_in_row: Vec<i64>,
-    ptr_to_vals_in_row: Vec<Rc<f64>>,
-    ptr_to_inds_in_row: Vec<Rc<i32>>,
-    ptr_to_diags: Vec<Rc<f64>>,
+    ptr_to_vals_in_row: Vec<Rc<RefCell<f64>>>,
+    ptr_to_inds_in_row: Vec<Rc<RefCell<i32>>>,
+    ptr_to_diags: Vec<Rc<RefCell<f64>>>,
     // Needed for cleaning up memory (in C++)
-    list_of_vals: Vec<f64>,
-    list_of_inds: Vec<i32>,
+    list_of_vals: Vec<Rc<RefCell<f64>>>,
+    list_of_inds: Vec<Rc<RefCell<i32>>>,
 }
 
 /**
@@ -61,9 +62,9 @@ impl HpcSparseMatrix<'_> {
         // The number of non-zero numbers in each row
         let mut nnz_in_row = Vec::with_capacity(local_nrow as usize);
         // Arrays of reference-counted pointers
-        let mut ptr_to_vals_in_row: Vec<Rc<f64>> = Vec::with_capacity(local_nrow as usize);
-        let mut ptr_to_inds_in_row: Vec<Rc<i32>> = Vec::with_capacity(local_nrow as usize);
-        let mut ptr_to_diags: Vec<Rc<f64>> = Vec::with_capacity(local_nrow as usize);
+        let mut ptr_to_vals_in_row: Vec<Rc<RefCell<f64>>> = Vec::with_capacity(local_nrow as usize);
+        let mut ptr_to_inds_in_row: Vec<Rc<RefCell<i32>>> = Vec::with_capacity(local_nrow as usize);
+        let mut ptr_to_diags: Vec<Rc<RefCell<f64>>> = Vec::with_capacity(local_nrow as usize);
 
         // Output data other than the sparse matrix
         let mut x : Vec<f64> = Vec::with_capacity(local_nrow as usize);
@@ -72,8 +73,10 @@ impl HpcSparseMatrix<'_> {
 
         // Allocate arrays that are of length local_nnz
         // Either, we do reference counting, or we make the data structure less insane
-        let mut list_of_vals: Vec<f64> = vec![0.0; local_nnz as usize]; //Vec::with_capacity(local_nnz as usize);
-        let mut list_of_inds: Vec<i32> = vec![0; local_nnz as usize]; //Vec::with_capacity(local_nnz as usize);
+        // let mut list_of_vals: Vec<Rc<RefCell<f64>>> = vec![Rc::new(RefCell::new(0.0)); local_nnz as usize]; //Vec::with_capacity(local_nnz as usize);
+        let mut list_of_vals: Vec<Rc<RefCell<f64>>> = (0..local_nnz).map(|_| Rc::new(RefCell::new(0.0))).collect();
+        // let mut list_of_inds: Vec<Rc<RefCell<i32>>> = vec![Rc::new(RefCell::new(0)); local_nnz as usize]; //Vec::with_capacity(local_nnz as usize);
+        let mut list_of_inds: Vec<Rc<RefCell<i32>>> = (0..local_nnz).map(|_| Rc::new(RefCell::new(0))).collect();
 
         let mut curvalind: usize = 0;
         let mut curindind: usize = 0;
@@ -85,8 +88,8 @@ impl HpcSparseMatrix<'_> {
                     let curlocalrow = (iz*nx*ny+iy*nx+ix) as usize;
                     let currow = start_row+iz*nx*ny+iy*nx+ix;
                     let mut nnzrow = 0;
-                    ptr_to_vals_in_row.push(Rc::new(list_of_vals[curvalind]));
-                    ptr_to_inds_in_row.push(Rc::new(list_of_inds[curindind]));
+                    ptr_to_vals_in_row.push(Rc::clone(&list_of_vals[curvalind]));
+                    ptr_to_inds_in_row.push(Rc::clone(&list_of_inds[curindind]));
 
                     for sz in -1..=1 {
                         for sy in -1..=1 {
@@ -96,17 +99,17 @@ impl HpcSparseMatrix<'_> {
                                     // This logic will skip over point that are not part of a 7-pt stencil
                                     if !use_7pt_stencil || (sz*sz+sy*sy+sx*sx<=1) {
                                         if curcol==currow {
-                                            ptr_to_diags.push(Rc::new(list_of_vals[curvalind]));
+                                            ptr_to_diags.push(Rc::clone(&list_of_vals[curvalind]));
                                             // *curvalptr++ = 27.0; // post-increment
-                                            list_of_vals[curvalind] = 27.0;
+                                            *list_of_vals[curvalind].borrow_mut() = 27.0;
                                             curvalind += 1;
                                         } else {
                                             // *curvalptr++ = -1.0; // post-increment
-                                            list_of_vals[curvalind] = -1.0;
+                                            *list_of_vals[curvalind].borrow_mut() = -1.0;
                                             curvalind += 1;
                                         }
                                         // *curindptr++ = curcol; // post-increment
-                                        list_of_inds[curindind] = curcol;
+                                        *list_of_inds[curindind].borrow_mut() = curcol;
                                         curindind += 1;
                                         nnzrow += 1;
                                     }
@@ -125,6 +128,10 @@ impl HpcSparseMatrix<'_> {
         println!("Matrix has {local_nrow} rows, with {local_nnz} non-zero values");
 
         println!("\n\n");
+        println!("list_of_vals: {:?}", list_of_vals);
+        println!("list_of_inds: {:?}", list_of_inds);
+        // println!("list_of_inds item: {:?}", Rc::clone(&list_of_inds[2]));
+        println!("\n");
         println!("nnz_in_row: {:?}", nnz_in_row);
         println!("ptr_to_vals_in_row: {:?}", ptr_to_vals_in_row);
         println!("ptr_to_inds_in_row: {:?}", ptr_to_inds_in_row);
