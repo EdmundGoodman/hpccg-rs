@@ -13,17 +13,17 @@
   - [x] `HPC_sparsemv.cpp`
 - Driver code
   - [x] `mytimer.cpp`
-  - [ ] `HPCCG.cpp`
+  - [x] `HPCCG.cpp`
   - [ ] `main.cpp`
 
 - Output format
   - [ ] `Yaml_Doc.cpp`
   - [ ] `Yaml_Element.cpp`
 - Excluded
-  - [x] `dump_matlab_matrix.cpp` (Unused data format)
+  - [x] `dump_matlab_matrix.cpp` (Unused data format - could be useful for understanding?)
   - [x] `exchange_externals.cpp` (Only required for MPI)
   - [x] `make_local_matrix.cpp` (Only required for MPI)
-  - [ ] `read_HPC_row.cpp` (Only required for pre-generated matrices)
+  - [x] `read_HPC_row.cpp` (Only required for pre-generated matrices)
 
 ## Output goals
 
