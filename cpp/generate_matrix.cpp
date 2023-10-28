@@ -66,14 +66,6 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, 
   int debug = 1;
 //#endif
 
-#ifdef USING_MPI
-  int size, rank; // Number of MPI processes, My process ID
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  int size = 1; // Serial case (not using MPI)
-  int rank = 0;
-#endif
 
   *A = new HPC_Sparse_Matrix; // Allocate matrix struct and fill it
   (*A)->title = 0;
@@ -85,13 +77,7 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, 
   int local_nrow = nx*ny*nz; // This is the size of our subblock
   assert(local_nrow>0); // Must have something to work with
   int local_nnz = 27*local_nrow; // Approximately 27 nonzeros per row (except for boundary nodes)
-
-  int total_nrow = local_nrow*size; // Total number of grid points in mesh
-  long long total_nnz = 27* (long long) total_nrow; // Approximately 27 nonzeros per row (except for boundary nodes)
-
-  int start_row = local_nrow*rank; // Each processor gets a section of a chimney stack domain
-  int stop_row = start_row+local_nrow-1;
-  
+  int stop_row = local_nrow-1;
 
   // Allocate arrays that are of length local_nrow
   (*A)->nnz_in_row = new int[local_nrow];
@@ -102,7 +88,6 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, 
   *x = new double[local_nrow];
   *b = new double[local_nrow];
   *xexact = new double[local_nrow];
-
 
   // Allocate arrays that are of length local_nnz
   (*A)->list_of_vals = new double[local_nnz];
@@ -116,7 +101,7 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, 
     for (int iy=0; iy<ny; iy++) {
       for (int ix=0; ix<nx; ix++) {
 	int curlocalrow = iz*nx*ny+iy*nx+ix;
-	int currow = start_row+iz*nx*ny+iy*nx+ix;
+	int currow = iz*nx*ny+iy*nx+ix;
 	int nnzrow = 0;
 	(*A)->ptr_to_vals_in_row[curlocalrow] = curvalptr;
 	(*A)->ptr_to_inds_in_row[curlocalrow] = curindptr;
@@ -127,7 +112,7 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, 
 //            Since we have a stack of nx by ny by nz domains , stacking in the z direction, we check to see
 //            if sx and sy are reaching outside of the domain, while the check for the curcol being valid
 //            is sufficient to check the z values
-              if ((ix+sx>=0) && (ix+sx<nx) && (iy+sy>=0) && (iy+sy<ny) && (curcol>=0 && curcol<total_nrow)) {
+              if ((ix+sx>=0) && (ix+sx<nx) && (iy+sy>=0) && (iy+sy<ny) && (curcol>=0 && curcol<local_nrow)) {
                 if (!use_7pt_stencil || (sz*sz+sy*sy+sx*sx<=1)) { // This logic will skip over point that are not part of a 7-pt stencil
                   if (curcol==currow) {
 		    (*A)->ptr_to_diags[curlocalrow] = curvalptr;
@@ -152,47 +137,66 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, 
      } // end iy loop
   } // end iz loop
 
-  (*A)->start_row = start_row ; 
+  (*A)->start_row = 0;
   (*A)->stop_row = stop_row;
-  (*A)->total_nrow = total_nrow;
-  (*A)->total_nnz = total_nnz;
+  (*A)->total_nrow = local_nrow;
+  (*A)->total_nnz = local_nnz;
   (*A)->local_nrow = local_nrow;
   (*A)->local_ncol = local_nrow;
   (*A)->local_nnz = local_nnz;
 
   if (debug) {
-      cout << "Process "<<rank<<" of "<<size<<" has "<<local_nrow;
-      cout << " rows. Global rows "<< start_row
+      cout << "Process "<<0<<" of "<<1<<" has "<<local_nrow;
+      cout << " rows. Global rows "<< 0
            <<" through "<< stop_row <<endl;
-      cout << "Process "<<rank<<" of "<<size
+      cout << "Process "<<0<<" of "<<1
            <<" has "<<local_nnz<<" nonzeros."<<endl<<endl;
 
-      cout << "Start: " << start_row << " Stop: " << stop_row << " Total: " << total_nrow
-           << " Total non-zeroes: " << total_nnz << endl;
+      cout << "Start: " << 0 << " Stop: " << stop_row << " Total: " << local_nrow
+           << " Total non-zeroes: " << local_nnz << endl;
       cout << "Local nrow: " << local_nrow << " Local ncol: " << local_nrow << " Local nnz" << local_nnz << endl;
 
       // nnz_in_row
-      cout << "nnz_in_row (" << stop_row << "): [";
-      for (int i=0; i<stop_row; i++) {
+      cout << "nnz_in_row (" << stop_row+1 << "): [";
+      for (int i=0; i<=stop_row; i++) {
           cout << (*A)->nnz_in_row[i] << ", ";
       }
       cout << "]" << endl;
       // ptr_to_vals_in_row
-      cout << "ptr_to_vals_in_row (" << stop_row << "): [";
-      for (int i=0; i<stop_row; i++) {
+      cout << "ptr_to_vals_in_row (" << stop_row+1 << "): [";
+      for (int i=0; i<=stop_row; i++) {
           cout << *((*A)->ptr_to_vals_in_row[i]) << ", ";
       }
       cout << "]" << endl;
       // ptr_to_inds_in_row
-      cout << "ptr_to_inds_in_row (" << stop_row << "): [";
-      for (int i=0; i<stop_row; i++) {
+      cout << "ptr_to_inds_in_row (" << stop_row+1 << "): [";
+      for (int i=0; i<=stop_row; i++) {
           cout << *((*A)->ptr_to_inds_in_row[i]) << ", ";
       }
       cout << "]" << endl;
       // ptr_to_diags
-      cout << "ptr_to_diags (" << stop_row << "): [";
-      for (int i=0; i<stop_row; i++) {
+      cout << "ptr_to_diags (" << stop_row+1 << "): [";
+      for (int i=0; i<=stop_row; i++) {
           cout << *((*A)->ptr_to_diags[i]) << ", ";
+      }
+      cout << "]" << endl;
+
+      // x
+      cout << "x (" << stop_row+1 << "): [";
+      for (int i=0; i<=stop_row; i++) {
+          cout << (*x)[i] << ", ";
+      }
+      cout << "]" << endl;
+      // b
+      cout << "b (" << stop_row+1 << "): [";
+      for (int i=0; i<=stop_row; i++) {
+          cout << (*b)[i] << ", ";
+      }
+      cout << "]" << endl;
+      // xexact
+      cout << "xexact (" << stop_row+1 << "): [";
+      for (int i=0; i<=stop_row; i++) {
+          cout << (*xexact)[i] << ", ";
       }
       cout << "]" << endl;
   }
