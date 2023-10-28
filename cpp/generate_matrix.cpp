@@ -60,11 +60,11 @@ using std::endl;
 void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, double **b, double **xexact)
 
 {
-#ifdef DEBUG
+//#ifdef DEBUG
+//  int debug = 1;
+//#else
   int debug = 1;
-#else
-  int debug = 0;
-#endif
+//#endif
 
 #ifdef USING_MPI
   int size, rank; // Number of MPI processes, My process ID
@@ -150,14 +150,7 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, 
 	(*xexact)[curlocalrow] = 1.0;
       } // end ix loop
      } // end iy loop
-  } // end iz loop  
-  if (debug) cout << "Process "<<rank<<" of "<<size<<" has "<<local_nrow;
-  
-  if (debug) cout << " rows. Global rows "<< start_row
-		  <<" through "<< stop_row <<endl;
-  
-  if (debug) cout << "Process "<<rank<<" of "<<size
-		  <<" has "<<local_nnz<<" nonzeros."<<endl;
+  } // end iz loop
 
   (*A)->start_row = start_row ; 
   (*A)->stop_row = stop_row;
@@ -166,6 +159,43 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, 
   (*A)->local_nrow = local_nrow;
   (*A)->local_ncol = local_nrow;
   (*A)->local_nnz = local_nnz;
+
+  if (debug) {
+      cout << "Process "<<rank<<" of "<<size<<" has "<<local_nrow;
+      cout << " rows. Global rows "<< start_row
+           <<" through "<< stop_row <<endl;
+      cout << "Process "<<rank<<" of "<<size
+           <<" has "<<local_nnz<<" nonzeros."<<endl<<endl;
+
+      cout << "Start: " << start_row << " Stop: " << stop_row << " Total: " << total_nrow
+           << " Total non-zeroes: " << total_nnz << endl;
+      cout << "Local nrow: " << local_nrow << " Local ncol: " << local_nrow << " Local nnz" << local_nnz << endl;
+
+      // nnz_in_row
+      cout << "nnz_in_row (" << stop_row << "): [";
+      for (int i=0; i<stop_row; i++) {
+          cout << (*A)->nnz_in_row[i] << ", ";
+      }
+      cout << "]" << endl;
+      // ptr_to_vals_in_row
+      cout << "ptr_to_vals_in_row (" << stop_row << "): [";
+      for (int i=0; i<stop_row; i++) {
+          cout << *((*A)->ptr_to_vals_in_row[i]) << ", ";
+      }
+      cout << "]" << endl;
+      // ptr_to_inds_in_row
+      cout << "ptr_to_inds_in_row (" << stop_row << "): [";
+      for (int i=0; i<stop_row; i++) {
+          cout << *((*A)->ptr_to_inds_in_row[i]) << ", ";
+      }
+      cout << "]" << endl;
+      // ptr_to_diags
+      cout << "ptr_to_diags (" << stop_row << "): [";
+      for (int i=0; i<stop_row; i++) {
+          cout << *((*A)->ptr_to_diags[i]) << ", ";
+      }
+      cout << "]" << endl;
+  }
 
   return;
 }
