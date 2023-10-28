@@ -78,7 +78,7 @@ pub fn hpccg_direct(
 
     *normr = rtrans.sqrt();
 
-    println!("Initial Residual = {normr:.4}");
+    println!("Initial Residual = {normr}");
 
     for k in 1..max_iter {
         if *normr <= tolerance {
@@ -88,6 +88,7 @@ pub fn hpccg_direct(
         if k == 1 {
             tick(&mut t0);
             p = waxpby_idiomatic(1.0, &r, 0.0, &r);
+            tock(&t0, &mut t2);
         } else {
             oldrtrans = rtrans;
             tick(&mut t0);
@@ -101,11 +102,11 @@ pub fn hpccg_direct(
 
         *normr = rtrans.sqrt();
         if k%print_freq == 0 || k+1 == max_iter {
-            println!("Iteration = {k} , Residual = {normr:.4}");
+            println!("Iteration = {k} , Residual = {normr}");
         }
 
         tick(&mut t0);
-        let Ap = sparsemv_direct_vec(matrix, &p);
+        Ap = sparsemv_direct_vec(matrix, &p);
         tock(&t0, &mut t3);
 
         tick(&mut t0);
@@ -115,7 +116,7 @@ pub fn hpccg_direct(
         let alpha = rtrans/alpha;
         tick(&mut t0);
         *x = waxpby_idiomatic(1.0, x, alpha, &p);
-        r = waxpby_idiomatic(1.0, &r, -alpha, &p);
+        r = waxpby_idiomatic(1.0, &r, -alpha, &Ap);
         tock(&t0, &mut t2);
         *niters = k;
     }
