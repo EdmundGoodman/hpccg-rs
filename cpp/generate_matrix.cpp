@@ -1,5 +1,3 @@
-
-//@HEADER
 // ************************************************************************
 //
 //               HPCCG: Simple Conjugate Gradient Benchmark Code
@@ -38,16 +36,7 @@
 // Questions? Contact Michael A. Heroux (maherou@sandia.gov)
 //
 // ************************************************************************
-//@HEADER
 
-/////////////////////////////////////////////////////////////////////////
-
-// Routine to read a sparse matrix, right hand side, initial guess,
-// and exact solution (as computed by a direct solver).
-
-/////////////////////////////////////////////////////////////////////////
-
-// nrow - number of rows of matrix (on this processor)
 
 #include <iostream>
 using std::cerr;
@@ -58,6 +47,23 @@ using std::endl;
 #include <cstdlib>
 
 #include "generate_matrix.hpp"
+
+/**
+ * A method to generate a sparse matrix, right-hand side, initial guess, and exact solution
+ * (as computed by a direct solver).
+ *
+ * `nrow` denotes the number of rows of the sparse matrix (on this processor)
+ *
+ * @todo An explanation of what the generation actually does!
+ *
+ * @param nx The size of the represented mesh in the x direction.
+ * @param ny The size of the represented mesh in the y direction.
+ * @param nz The size of the represented mesh in the z direction.
+ * @param A A pointer to a struct, which is updated to contain the generated sparse matrix.
+ * @param x A pointer to a list of values, which is updated to contain the initial guess.
+ * @param b A pointer to a list of values, which is updated to contain the right-hand side.
+ * @param xexact A pointer to a list of values, which is updated to contain the exact solution.
+ */
 void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, double **b,
                      double **xexact)
 

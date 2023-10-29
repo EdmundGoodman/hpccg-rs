@@ -1,5 +1,3 @@
-
-//@HEADER
 // ************************************************************************
 //
 //               HPCCG: Simple Conjugate Gradient Benchmark Code
@@ -38,7 +36,6 @@
 // Questions? Contact Michael A. Heroux (maherou@sandia.gov)
 //
 // ************************************************************************
-//@HEADER
 
 #ifdef USING_MPI  // Compile this routine only if running in parallel
 #include <iostream>
@@ -49,6 +46,13 @@ using std::endl;
 
 #include "exchange_externals.hpp"
 #undef DEBUG
+
+/**
+ * A method to exchange external data between MPI processes.
+ *
+ * @param A The sparse matrix currently being computed.
+ * @param x The data to be sent.
+ */
 void exchange_externals(HPC_Sparse_Matrix *A, const double *x) {
     int i, j, k;
     int num_external = 0;

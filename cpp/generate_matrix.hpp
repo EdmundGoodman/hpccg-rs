@@ -1,6 +1,4 @@
 
-//@HEADER
-// ************************************************************************
 //
 //               HPCCG: Simple Conjugate Gradient Benchmark Code
 //                 Copyright (2006) Sandia Corporation
@@ -38,7 +36,6 @@
 // Questions? Contact Michael A. Heroux (maherou@sandia.gov)
 //
 // ************************************************************************
-//@HEADER
 
 #ifndef GENERATE_MATRIX_H
 #define GENERATE_MATRIX_H

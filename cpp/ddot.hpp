@@ -1,5 +1,3 @@
-
-//@HEADER
 // ************************************************************************
 //
 //               HPCCG: Simple Conjugate Gradient Benchmark Code
@@ -38,7 +36,6 @@
 // Questions? Contact Michael A. Heroux (maherou@sandia.gov)
 //
 // ************************************************************************
-//@HEADER
 #ifndef DDOT_H
 #define DDOT_H
 #ifdef USING_MPI

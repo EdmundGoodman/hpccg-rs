@@ -1,5 +1,3 @@
-
-//@HEADER
 // ************************************************************************
 //
 //               HPCCG: Simple Conjugate Gradient Benchmark Code
@@ -38,7 +36,6 @@
 // Questions? Contact Michael A. Heroux (maherou@sandia.gov)
 //
 // ************************************************************************
-//@HEADER
 
 #ifndef HPC_SPARSE_MATRIX_H
 #define HPC_SPARSE_MATRIX_H
@@ -50,19 +47,22 @@ const int max_external = 100000;
 const int max_num_messages = 500;
 const int max_num_neighbors = max_num_messages;
 
+/**
+ * A structure representing a sparse matrix.
+ */
 struct HPC_Sparse_Matrix_STRUCT {
-    char *title;
-    int start_row;
-    int stop_row;
-    int total_nrow;
-    long long total_nnz;
-    int local_nrow;
-    int local_ncol;  // Must be defined in make_local_matrix
-    int local_nnz;
-    int *nnz_in_row;
-    double **ptr_to_vals_in_row;
-    int **ptr_to_inds_in_row;
-    double **ptr_to_diags;
+    char *title; /**< The title of the sparse matrix. */
+    int start_row; /**< The start row within the entire matrix (always `0` in serial mode). */
+    int stop_row; /**< The start row within the entire matrix (always `total_nrow-1` in serial mode). */
+    int total_nrow; /**< The number of rows of the entire matrix. */
+    long long total_nnz; /**< The number of non-zeroes in the entire matrix. */
+    int local_nrow; /**< The number of rows in the local slice of the matrix (always `total_nrow` in serial mode). */
+    int local_ncol;  /**< Must be defined in make_local_matrix (unused and defaults to `local_nrow` in serial mode). */
+    int local_nnz; /**< The number of non-zeroes in the local slice of the matrix (always `total_nnz` in serial mode). */
+    int *nnz_in_row; /**< An array of length `local_nrow` containing the number of non-zeroes in each row. */
+    double **ptr_to_vals_in_row; /**< An array of pointers to the starts of slices in `list_of_vals` for each row. */
+    int **ptr_to_inds_in_row; /**< An array of pointers to the starts of slices in `list_of_inds` for each row. */
+    double **ptr_to_diags; /**< An array of pointers to the starts of slices in `list_of_vals`. */
 
 #ifdef USING_MPI
     int num_external;
@@ -76,10 +76,11 @@ struct HPC_Sparse_Matrix_STRUCT {
     int *send_length;
     double *send_buffer;
 #endif
-
-    double *list_of_vals;  // needed for cleaning up memory
-    int *list_of_inds;     // needed for cleaning up memory
+    // needed for cleaning up memory
+    double *list_of_vals;  /**< An array of non-zero values in the sparse matrix. */
+    int *list_of_inds;     /**< An array of the indices in rows of non-zero values in the sparse matrix. */
 };
+
 typedef struct HPC_Sparse_Matrix_STRUCT HPC_Sparse_Matrix;
 
 void destroyMatrix(HPC_Sparse_Matrix *&A);
