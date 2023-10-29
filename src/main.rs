@@ -29,7 +29,7 @@ fn main() {
 //     println!("waxpby({:?}, {:?}) = {:?}", vx, vy, r);
 
 
-    let (nx, ny, nz) = (3,3,3);
+    let (nx, ny, nz) = (25,25,25);
     let (matrix, x, b, xexact) = HpcSparseMatrix::generate_matrix(nx, ny, nz);
 
     let mut x = x.clone();
@@ -57,7 +57,7 @@ fn main() {
     println!("Parallelism:\n  MPI not enabled:\n  OpenMP not enabled:");
     println!("Dimensions:\n  nx: {nx}\n  ny: {ny}\n  nz: {nz}");
     println!("Number of iterations: {niters}");
-    println!("Final residual: {normr:.4}");
+    println!("Final residual: {normr:.5e}");
     println!("#********** Performance Summary (times in sec) ***********");
     println!("Time Summary:");
     println!("  Total: {:.4}", times[0]);

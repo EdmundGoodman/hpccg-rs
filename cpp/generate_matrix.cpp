@@ -60,12 +60,11 @@ using std::endl;
 void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, double **b, double **xexact)
 
 {
-//#ifdef DEBUG
-//  int debug = 1;
-//#else
-//  int debug = 0;
-//#endif
-    int debug = 1;
+#ifdef DEBUG
+  int debug = 1;
+#else
+  int debug = 0;
+#endif
 
 #ifdef USING_MPI
   int size, rank; // Number of MPI processes, My process ID
@@ -151,83 +150,14 @@ void generate_matrix(int nx, int ny, int nz, HPC_Sparse_Matrix **A, double **x, 
 	(*xexact)[curlocalrow] = 1.0;
       } // end ix loop
      } // end iy loop
-  } // end iz loop
-
-    if (debug) {
-        cout << "Process "<<0<<" of "<<1<<" has "<<local_nrow;
-        cout << " rows. Global rows "<< 0
-             <<" through "<< stop_row <<endl;
-        cout << "Process "<<0<<" of "<<1
-             <<" has "<<local_nnz<<" nonzeros."<<endl<<endl;
-
-        cout << "Start: " << 0 << " Stop: " << stop_row << " Total: " << local_nrow
-             << " Total non-zeroes: " << local_nnz << endl;
-        cout << "Local nrow: " << local_nrow << " Local ncol: " << local_nrow << " Local nnz" << local_nnz << endl;
-
-        // nnz_in_row
-        cout << "nnz_in_row (" << stop_row+1 << "): [";
-        for (int i=0; i<=stop_row; i++) {
-            cout << (*A)->nnz_in_row[i] << ", ";
-        }
-        cout << "]" << endl;
-        // ptr_to_vals_in_row
-        cout << "ptr_to_vals_in_row (" << stop_row+1 << "): [";
-        for (int i=0; i<=stop_row; i++) {
-            cout << *((*A)->ptr_to_vals_in_row[i]) << ", ";
-        }
-        cout << "]" << endl;
-        // ptr_to_inds_in_row
-        cout << "ptr_to_inds_in_row (" << stop_row+1 << "): [";
-        for (int i=0; i<=stop_row; i++) {
-            cout << *((*A)->ptr_to_inds_in_row[i]) << ", ";
-        }
-        cout << "]" << endl;
-        // ptr_to_diags
-        cout << "ptr_to_diags (" << stop_row+1 << "): [";
-        for (int i=0; i<=stop_row; i++) {
-            cout << *((*A)->ptr_to_diags[i]) << ", ";
-        }
-        cout << "]" << endl;
-
-        // list_of_vals
-        cout << "list_of_vals (" << local_nnz << "): [";
-        for (int i=0; i<local_nnz; i++) {
-            cout << (*A)->list_of_vals[i] << ", ";
-        }
-        cout << "]" << endl;
-        // list_of_inds
-        cout << "list_of_inds (" << local_nnz << "): [";
-        for (int i=0; i<local_nnz; i++) {
-            cout << (*A)->list_of_inds[i] << ", ";
-        }
-        cout << "]" << endl;
-
-        // x
-        cout << "x (" << stop_row+1 << "): [";
-        for (int i=0; i<=stop_row; i++) {
-            cout << (*x)[i] << ", ";
-        }
-        cout << "]" << endl;
-        // b
-        cout << "b (" << stop_row+1 << "): [";
-        for (int i=0; i<=stop_row; i++) {
-            cout << (*b)[i] << ", ";
-        }
-        cout << "]" << endl;
-        // xexact
-        cout << "xexact (" << stop_row+1 << "): [";
-        for (int i=0; i<=stop_row; i++) {
-            cout << (*xexact)[i] << ", ";
-        }
-        cout << "]" << endl;
-    }
-//  if (debug) cout << "Process "<<rank<<" of "<<size<<" has "<<local_nrow;
-//
-//  if (debug) cout << " rows. Global rows "<< start_row
-//		  <<" through "<< stop_row <<endl;
-//
-//  if (debug) cout << "Process "<<rank<<" of "<<size
-//		  <<" has "<<local_nnz<<" nonzeros."<<endl;
+  } // end iz loop  
+  if (debug) cout << "Process "<<rank<<" of "<<size<<" has "<<local_nrow;
+  
+  if (debug) cout << " rows. Global rows "<< start_row
+		  <<" through "<< stop_row <<endl;
+  
+  if (debug) cout << "Process "<<rank<<" of "<<size
+		  <<" has "<<local_nnz<<" nonzeros."<<endl;
 
   (*A)->start_row = start_row ; 
   (*A)->stop_row = stop_row;

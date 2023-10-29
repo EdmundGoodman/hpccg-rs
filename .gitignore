@@ -2,6 +2,10 @@
 .idea/
 .vscode/
 
+# Project-specific excludes
+cpp/bak/
+cpp/original/
+
 # Prerequisites
 *.d
 

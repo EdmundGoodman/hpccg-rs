@@ -78,7 +78,7 @@ pub fn hpccg_direct(
 
     *normr = rtrans.sqrt();
 
-    println!("Initial Residual = {normr}");
+    println!("Initial Residual = {normr:+.5e}");
 
     for k in 1..max_iter {
         if *normr <= tolerance {
@@ -102,7 +102,7 @@ pub fn hpccg_direct(
 
         *normr = rtrans.sqrt();
         if k%print_freq == 0 || k+1 == max_iter {
-            println!("Iteration = {k} , Residual = {normr}");
+            println!("Iteration = {k} , Residual = {normr:+.5e}");
         }
 
         tick(&mut t0);
