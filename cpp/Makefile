@@ -131,8 +131,22 @@ TEST_OBJ          = $(TEST_CPP:.cpp=.o)
 $(TARGET): $(TEST_OBJ)
 	$(LINKER) $(CPP_OPT_FLAGS) $(OMP_FLAGS) $(TEST_OBJ) $(LIB_PATHS) -o $(TARGET)
 
-test:
-	@echo "Not implemented yet..."
+#.PHONY: test
+#test:
+#	@echo "Not implemented yet..."
 
+.PHONY: clean
 clean:
 	@rm -f *.o  *~ $(TARGET) $(TARGET).exe test_HPCPCG 
+
+.PHONY: no_yaml
+no_yaml:
+	@rm *.yaml
+
+# .PHONY: lint
+# lint:
+# 	clang-tidy mccomp.cpp
+
+.PHONY: format
+format:
+	clang-format -style=file -i *.cpp *.hpp

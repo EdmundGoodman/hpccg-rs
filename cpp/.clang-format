@@ -1,0 +1,5 @@
+BasedOnStyle: Google
+IndentWidth: 4
+SpacesBeforeTrailingComments: 2
+# Explicitly extended from 80 due to `generate_matrix` nested structures
+ColumnLimit: 100
