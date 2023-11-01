@@ -12,7 +12,14 @@
 #include "YAML_Doc.hpp"
 using namespace std;
 
-// set the microapp_name and version which will become part of the YAML doc.
+/**
+ * Set the mini-app name and version which will become part of the YAML doc.
+ *
+ * @param miniApp_Name The name of the mini-app.
+ * @param miniApp_Version The version of the mini-app.
+ * @param destination_Directory The output directory for the YAML file.
+ * @param destination_FileName The output filename for the YAML file.
+ */
 YAML_Doc::YAML_Doc(const std::string& miniApp_Name, const std::string& miniApp_Version,
                    const std::string& destination_Directory,
                    const std::string& destination_FileName) {
@@ -22,12 +29,15 @@ YAML_Doc::YAML_Doc(const std::string& miniApp_Name, const std::string& miniApp_V
     destinationFileName = destination_FileName;
 }
 
-// inherits the destructor from YAML_Element
+/**
+ * Inherits the destructor from YAML_Element.
+ */
 YAML_Doc::~YAML_Doc(void) {}
 
-/*
- * generates YAML from the elements of the document and saves it
- * to a file
+/**
+ * Generate YAML from the elements of the document and save it to a file.
+ *
+ * @return A string containing the YAML data written to the file.
  */
 string YAML_Doc::generateYAML() {
     string yaml;
