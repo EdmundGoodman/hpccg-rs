@@ -1,5 +1,3 @@
-
-//@HEADER
 // ************************************************************************
 //
 //               HPCCG: Simple Conjugate Gradient Benchmark Code
@@ -38,7 +36,7 @@
 // Questions? Contact Michael A. Heroux (maherou@sandia.gov)
 //
 // ************************************************************************
-//@HEADER
+
 /////////////////////////////////////////////////////////////////////////
 
 // Routine to compute the update of a vector with the sum of two
@@ -58,6 +56,17 @@
 
 #include "waxpby.hpp"
 
+/**
+ * A method to compute the update of a vector with the sum of two scaled vectors.
+ *
+ * @param n The length of both vectors.
+ * @param alpha The scaling factor for the first vector, `x`.
+ * @param x The first input vector.
+ * @param beta The scaling factor for the second vector, `y`.
+ * @param y The second input vector.
+ * @param w A mutable pointer, updated to contain the result `w = alpha*x + beta*y`
+ * @return An exit code of zero on success.
+ */
 int waxpby(const int n, const double alpha, const double* const x, const double beta,
            const double* const y, double* const w) {
     if (alpha == 1.0) {

@@ -1,5 +1,3 @@
-
-//@HEADER
 // ************************************************************************
 //
 //               HPCCG: Simple Conjugate Gradient Benchmark Code
@@ -38,22 +36,31 @@
 // Questions? Contact Michael A. Heroux (maherou@sandia.gov)
 //
 // ************************************************************************
-//@HEADER
-/////////////////////////////////////////////////////////////////////////
 
-// Function to return time in seconds.
-// If compiled with no flags, return CPU time (user and system).
-// If compiled with -DWALL, returns elapsed time.
-
-/////////////////////////////////////////////////////////////////////////
 #ifdef USING_MPI
-#include <mpi.h>  // If this routine is compiled with -DUSING_MPI
-                  // then include mpi.h
+// If this routine is compiled with -DUSING_MPI then include mpi.
+#include <mpi.h>
+
+/**
+ * A function to get the time in seconds.
+ *
+ * This version of the function will be used when the code is compiled with `-DUSING_MPI`, and
+ * uses the MPI API.
+ *
+ * @return The time in seconds.
+ */
 double mytimer(void) { return (MPI_Wtime()); }
 
 #elif defined(UseClock)
 
 #include <time.hpp>
+/**
+ * A function to get the time in seconds.
+ *
+ * This version of the function uses the `time.hpp` `clock` function.
+ *
+ * @return The time in seconds.
+ */
 double mytimer(void) {
     clock_t t1;
     static clock_t t0 = 0;
@@ -72,6 +79,13 @@ double mytimer(void) {
 #include <sys/time.h>
 
 #include <cstdlib>
+/**
+ * A function to get the time in seconds.
+ *
+ * This version of the function uses the `gettimeofday` function to get the elapsed time.
+ *
+ * @return The time in seconds.
+ */
 double mytimer(void) {
     struct timeval tp;
     static long start = 0, startu;
@@ -91,6 +105,13 @@ double mytimer(void) {
 #include <unistd.h>
 
 #include <cstdlib>
+/**
+ * A function to get the time in seconds.
+ *
+ * This version of the function uses `ClockTick` from `sysconf`.
+ *
+ * @return The time in seconds.
+ */
 double mytimer(void) {
     struct tms ts;
     static double ClockTick = 0.0;
@@ -106,6 +127,13 @@ double mytimer(void) {
 #include <sys/time.h>
 
 #include <cstdlib>
+/**
+ * A function to get the time in seconds.
+ *
+ * This version of the function uses the `getrusage` function to get the CPU time (user and system).
+ *
+ * @return The time in seconds.
+ */
 double mytimer(void) {
     struct rusage ruse;
     getrusage(RUSAGE_SELF, &ruse);

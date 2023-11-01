@@ -1,5 +1,3 @@
-
-//@HEADER
 // ************************************************************************
 //
 //               HPCCG: Simple Conjugate Gradient Benchmark Code
@@ -38,15 +36,6 @@
 // Questions? Contact Michael A. Heroux (maherou@sandia.gov)
 //
 // ************************************************************************
-//@HEADER
-/////////////////////////////////////////////////////////////////////////
-
-// Routine to read a sparse matrix, right hand side, initial guess,
-// and exact solution (as computed by a direct solver).
-
-/////////////////////////////////////////////////////////////////////////
-
-// nrow - number of rows of matrix (on this processor)
 
 #include <iostream>
 using std::cerr;
@@ -57,6 +46,19 @@ using std::endl;
 #include <cstdlib>
 
 #include "read_HPC_row.hpp"
+
+/**
+ * Routine to read a sparse matrix, right hand side, initial guess,
+ * and exact solution (as computed by a direct solver) from a data file.
+ *
+ * `nrow` is the number of rows of matrix (on this processor)
+ *
+ * @param data_file The data file to read from.
+ * @param A A mutable pointer to the sparse matrix data structure, which is set from the data file.
+ * @param x A mutable pointer to the initial guess, which is set from the data file.
+ * @param b A mutable pointer to the right hand side vector, which is set from the data file.
+ * @param xexact A mutable pointer to the exact solution, which is set from the data file.
+ */
 void read_HPC_row(char *data_file, HPC_Sparse_Matrix **A, double **x, double **b, double **xexact)
 
 {

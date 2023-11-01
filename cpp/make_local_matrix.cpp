@@ -1,5 +1,3 @@
-
-//@HEADER
 // ************************************************************************
 //
 //               HPCCG: Simple Conjugate Gradient Benchmark Code
@@ -38,7 +36,6 @@
 // Questions? Contact Michael A. Heroux (maherou@sandia.gov)
 //
 // ************************************************************************
-//@HEADER
 
 #ifdef USING_MPI  // Compile this routine only if running in parallel
 #include <iostream>
@@ -56,6 +53,12 @@ using std::endl;
 #include "mytimer.hpp"
 #include "read_HPC_row.hpp"
 // #define DEBUG
+
+/**
+ * A method to make local matrices for use by MPI.
+ *
+ * @param A The input sparse matrix to split for MPI.
+ */
 void make_local_matrix(HPC_Sparse_Matrix *A) {
     std::map<int, int> externals;
     int i, j, k;

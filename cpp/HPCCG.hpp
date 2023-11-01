@@ -1,5 +1,3 @@
-
-//@HEADER
 // ************************************************************************
 //
 //               HPCCG: Simple Conjugate Gradient Benchmark Code
@@ -38,7 +36,6 @@
 // Questions? Contact Michael A. Heroux (maherou@sandia.gov)
 //
 // ************************************************************************
-//@HEADER
 
 #ifndef HPCCG_H
 #define HPCCG_H
@@ -55,18 +52,4 @@
 #endif
 int HPCCG(HPC_Sparse_Matrix* A, const double* const b, double* const x, const int max_iter,
           const double tolerance, int& niters, double& normr, double* times);
-
-// this function will compute the Conjugate Gradient...
-// A <=> Matrix
-// b <=> constant
-// xnot <=> initial guess
-// max_iter <=> how many times we iterate
-// tolerance <=> specifies how "good"of a value we would like
-// x <=> used for return value
-
-// A is known
-// x is unknown vector
-// b is known vector
-// xnot = 0
-// niters is the number of iterations
 #endif
