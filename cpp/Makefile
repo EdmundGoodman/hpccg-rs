@@ -77,10 +77,13 @@ USE_MPI =
 
 #IA32 with GCC: 
 #CPP_OPT_FLAGS = -O3 -funroll-all-loops -malign-double
-CPP_OPT_FLAGS = -O3 -ftree-vectorize -ftree-vectorizer-verbose=2
+#CPP_OPT_FLAGS = -O3 -ftree-vectorize -ftree-vectorizer-verbose=2
 
-# NOTE: Add `gprof` flags
+# NOTE: Add `gprof`/`perf` flags
 #CPP_OPT_FLAGS = -O0 -pg
+# `/test_HPCCG 25 25 25; gprof test_HPCCG gmon.out > analysis.txt`
+CPP_OPT_FLAGS = -O3 -ftree-vectorize -ftree-vectorizer-verbose=2 -ggdb
+# `perf record -g ./test_HPCCG 25 25 25; perf report`
 
 #
 # 4) MPI library:
