@@ -4,14 +4,6 @@ use crate::sparsemv::sparsemv_direct_vec;
 use crate::waxpby::waxpby_idiomatic;
 use super::hpc_sparse_matrix::HpcSparseMatrix;
 
-// macro_rules! tick {
-//     ($t0:ident) => {tick(&mut $t0)};
-// }
-//
-// macro_rules! tock {
-//     ($t0:ident, $t:ident) => {tock(&$t0, &mut $t)};
-// }
-
 fn tick(t0: &mut f64) {
     *t0 = mytimer();
 }

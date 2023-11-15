@@ -6,30 +6,19 @@ pub mod sparsemv;
 pub mod mytimer;
 pub mod hpccg;
 
-// use ddot::ddot_idiomatic;
-// use compute_residual::compute_residual_idiomatic;
-// use waxpby::waxpby_idiomatic;
-// use crate::mytimer::mytimer;
-
 use hpc_sparse_matrix::HpcSparseMatrix;
 use hpccg::hpccg_direct;
 
+use std::env;
+
 fn main() {
-//     let vx = vec![1.0,2.0,3.0];
-//     let vy = vec![3.0,2.0,1.0];
-//     let r = ddot_idiomatic(&vx, &vy);
-//     println!("{:?} . {:?} = {r}", vx, vy);
-//
-//     let r = compute_residual_idiomatic(&vx, &vy);
-//     println!("residual({:?}, {:?}) = {r}", vx, vy);
-//
-//     let alpha = 4.0;
-//     let beta = 5.0;
-//     let r = waxpby_idiomatic(alpha, &vx, beta, &vy);
-//     println!("waxpby({:?}, {:?}) = {:?}", vx, vy, r);
 
+    // let (nx, ny, nz) = (25,25,25);
+    let args: Vec<String> = env::args().collect();
+    let nx: i32 = args[1].parse::<i32>().unwrap();
+    let ny: i32 = args[2].parse::<i32>().unwrap();
+    let nz: i32 = args[3].parse::<i32>().unwrap();
 
-    let (nx, ny, nz) = (25,25,25);
     let (matrix, x, b, xexact) = HpcSparseMatrix::generate_matrix(nx, ny, nz);
 
     let mut x = x.clone();

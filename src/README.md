@@ -14,16 +14,15 @@
 - Driver code
   - [x] `mytimer.cpp`
   - [x] `HPCCG.cpp`
-  - [ ] `main.cpp`
+  - [x] `main.cpp`
 
-- Output format
-  - [ ] `Yaml_Doc.cpp`
-  - [ ] `Yaml_Element.cpp`
 - Excluded
   - [x] `dump_matlab_matrix.cpp` (Unused data format - could be useful for understanding?)
   - [x] `exchange_externals.cpp` (Only required for MPI)
   - [x] `make_local_matrix.cpp` (Only required for MPI)
   - [x] `read_HPC_row.cpp` (Only required for pre-generated matrices)
+  - [x] `Yaml_Doc.cpp` (Only needed to dump data as YAML)
+  - [x] `Yaml_Element.cpp` (Only needed to dump data as YAML)
 
 ## Output goals
 
