@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use crate::sparsemv::{sparsemv_direct_vec,sparsemv_idiomatic_vec};
 
 /// A data structure representing a sparse matrix mesh
 #[derive(Debug)]
@@ -165,7 +166,7 @@ pub struct IdiomaticHpcSparseMatrix {
     pub local_nrow: i32,
     pub local_ncol: i32,
     pub local_nnz: i32,
-    pub data: Vec<Vec<(f64, i32)>>
+    pub data: Vec<Vec<(f64, usize)>>
 }
 
 impl IdiomaticHpcSparseMatrix {
@@ -188,7 +189,7 @@ impl From<HpcSparseMatrix> for IdiomaticHpcSparseMatrix {
                 // contiguous list of values
                 let val = *item.list_of_vals[row_start + offset].borrow();
                 let ind = *item.list_of_inds[row_start + offset].borrow();
-                row.push((val, ind));
+                row.push((val, ind as usize));
             }
             row_start += cur_nnz;
             data.push(row);
@@ -263,7 +264,14 @@ fn test_sparse_matrix() {
 #[test]
 fn test_idiomatic_sparse_matrix() {
     let (matrix, _, _, _) = HpcSparseMatrix::generate_matrix(2, 2, 2);
-    let new_matrix = IdiomaticHpcSparseMatrix::from(matrix);
+    let guess = vec![2.3; 8];
 
-    println!("{:?}", new_matrix);
+    let old = sparsemv_direct_vec(&matrix, &guess);
+    // println!("{:?}", old);
+    let new_matrix = IdiomaticHpcSparseMatrix::from(matrix);
+    // println!("{:?}", new_matrix);
+    let new = sparsemv_idiomatic_vec(&new_matrix, &guess);
+    // println!("{:?}", new);
+
+    assert_eq!(old, new);
 }

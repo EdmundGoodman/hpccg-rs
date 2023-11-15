@@ -6,7 +6,7 @@ pub mod sparsemv;
 pub mod mytimer;
 pub mod hpccg;
 
-use hpc_sparse_matrix::HpcSparseMatrix;
+use hpc_sparse_matrix::{HpcSparseMatrix,IdiomaticHpcSparseMatrix};
 use hpccg::hpccg_direct;
 
 use std::env;
@@ -20,6 +20,8 @@ fn main() {
     let nz: i32 = args[3].parse::<i32>().unwrap();
 
     let (matrix, x, b, xexact) = HpcSparseMatrix::generate_matrix(nx, ny, nz);
+
+    let matrix = IdiomaticHpcSparseMatrix::from(matrix);
 
     let mut x = x.clone();
     let mut niters = 0;

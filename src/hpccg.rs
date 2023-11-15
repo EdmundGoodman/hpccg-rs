@@ -1,8 +1,8 @@
 use crate::ddot::ddot_idiomatic;
 use crate::mytimer::mytimer;
-use crate::sparsemv::sparsemv_direct_vec;
+use crate::sparsemv::sparsemv_idiomatic_vec;
 use crate::waxpby::waxpby_idiomatic;
-use super::hpc_sparse_matrix::HpcSparseMatrix;
+use super::hpc_sparse_matrix::IdiomaticHpcSparseMatrix;
 
 fn tick(t0: &mut f64) {
     *t0 = mytimer();
@@ -13,7 +13,7 @@ fn tock(t0: &f64, t: &mut f64) {
 }
 
 pub fn hpccg_direct(
-    matrix: &HpcSparseMatrix,
+    matrix: &IdiomaticHpcSparseMatrix,
     b: &Vec<f64>,
     x: &mut Vec<f64>,
     max_iter: i32,
@@ -57,7 +57,7 @@ pub fn hpccg_direct(
     tock(&t0, &mut t2);  //tock!(t0, t2);
 
     tick(&mut t0);
-    Ap = sparsemv_direct_vec(&matrix, &p);
+    Ap = sparsemv_idiomatic_vec(&matrix, &p);
     tock(&t0, &mut t3);
 
     tick(&mut t0);
@@ -98,7 +98,7 @@ pub fn hpccg_direct(
         }
 
         tick(&mut t0);
-        Ap = sparsemv_direct_vec(matrix, &p);
+        Ap = sparsemv_idiomatic_vec(matrix, &p);
         tock(&t0, &mut t3);
 
         tick(&mut t0);

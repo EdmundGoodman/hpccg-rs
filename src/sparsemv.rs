@@ -1,4 +1,4 @@
-use super::hpc_sparse_matrix::HpcSparseMatrix;
+use super::hpc_sparse_matrix::{HpcSparseMatrix,IdiomaticHpcSparseMatrix};
 
 /// Sparse matrix-vector multiplication, i.e. calculating `y = Ax`
 ///
@@ -49,6 +49,20 @@ pub fn sparsemv_direct_vec(matrix: &HpcSparseMatrix, x: &Vec<f64>) -> Vec<f64> {
         }
         y[i] = sum;
         start_index += cur_nnz;
+    }
+    y
+}
+
+pub fn sparsemv_idiomatic_vec(matrix: &IdiomaticHpcSparseMatrix, x: &Vec<f64>) -> Vec<f64> {
+    let nrow = matrix.local_nrow as usize;
+
+    let mut y = Vec::with_capacity(x.len());
+    for row in matrix.data.iter() {
+        let mut sum = 0.0;
+        for (val, ind) in row {
+            sum += val * x[*ind];
+        }
+        y.push(sum);
     }
     y
 }
