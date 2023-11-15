@@ -150,6 +150,65 @@ impl HpcSparseMatrix {
     }
 }
 
+/// A re-worked data structure representing a sparse matrix mesh
+///
+/// Instead of `nnz_in_row`,`ptr_to_vals_in_row`,...,`list_of_inds` we have a single
+/// non-homogenous vector of rows, which are themselves vectors of pairs of indices
+/// and their values
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct IdiomaticHpcSparseMatrix {
+    pub start_row: i32,
+    pub stop_row: i32,
+    pub total_nrow: i32,
+    pub total_nnz: i32,
+    pub local_nrow: i32,
+    pub local_ncol: i32,
+    pub local_nnz: i32,
+    pub data: Vec<Vec<(f64, i32)>>
+}
+
+impl IdiomaticHpcSparseMatrix {
+
+}
+
+
+impl From<HpcSparseMatrix> for IdiomaticHpcSparseMatrix {
+    fn from(item: HpcSparseMatrix) -> Self {
+        let mut data = vec![];
+
+        let nrows = item.local_nrow as usize;
+        let mut row_start = 0;
+
+        for row_num in 0..nrows {
+            let mut row = vec![];
+            let cur_nnz = item.nnz_in_row[row_num] as usize;
+            for offset in 0..cur_nnz {
+                // De-reference the value/index at the current position in the
+                // contiguous list of values
+                let val = *item.list_of_vals[row_start + offset].borrow();
+                let ind = *item.list_of_inds[row_start + offset].borrow();
+                row.push((val, ind));
+            }
+            row_start += cur_nnz;
+            data.push(row);
+        }
+
+        IdiomaticHpcSparseMatrix {
+            start_row: item.start_row,
+            stop_row: item.stop_row,
+            total_nrow: item.total_nrow,
+            total_nnz: item.total_nnz,
+            local_nrow: item.local_nrow,
+            local_ncol: item.local_ncol,
+            local_nnz: item.local_nnz,
+            data
+        }
+    }
+}
+
+
+
 
 #[test]
 fn test_sparse_matrix() {
@@ -198,4 +257,13 @@ fn test_sparse_matrix() {
     assert_eq!(guess, vec![0.0; 8]);
     assert_eq!(rhs, vec![20.0; 8]);
     assert_eq!(exact, vec![1.0; 8]);
+}
+
+
+#[test]
+fn test_idiomatic_sparse_matrix() {
+    let (matrix, _, _, _) = HpcSparseMatrix::generate_matrix(2, 2, 2);
+    let new_matrix = IdiomaticHpcSparseMatrix::from(matrix);
+
+    println!("{:?}", new_matrix);
 }
