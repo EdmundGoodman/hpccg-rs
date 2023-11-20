@@ -6,7 +6,7 @@
 cpp/bak/
 cpp/original/
 analysis.txt
-perf.data
+*perf.data*
 
 # Prerequisites
 *.d

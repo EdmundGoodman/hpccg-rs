@@ -57,9 +57,10 @@ pub fn sparsemv_idiomatic_vec(matrix: &IdiomaticHpcSparseMatrix, x: &Vec<f64>) -
     let nrow = matrix.local_nrow as usize;
 
     let mut y = Vec::with_capacity(x.len());
+    // todo: debug mov command
     for row in matrix.data.iter() {
         let mut sum = 0.0;
-        for (val, ind) in row {
+        for (val, ind) in row.iter() {
             sum += val * x[*ind];
         }
         y.push(sum);

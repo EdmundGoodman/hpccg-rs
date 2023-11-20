@@ -9,15 +9,15 @@ pub mod hpccg;
 use hpc_sparse_matrix::{HpcSparseMatrix,IdiomaticHpcSparseMatrix};
 use hpccg::hpccg_direct;
 
-use std::env;
+// use std::env;
 
 fn main() {
 
-    // let (nx, ny, nz) = (25,25,25);
-    let args: Vec<String> = env::args().collect();
-    let nx: i32 = args[1].parse::<i32>().unwrap();
-    let ny: i32 = args[2].parse::<i32>().unwrap();
-    let nz: i32 = args[3].parse::<i32>().unwrap();
+    let (nx, ny, nz) = (25,25,25);
+    // let args: Vec<String> = env::args().collect();
+    // let nx: i32 = args[1].parse::<i32>().unwrap();
+    // let ny: i32 = args[2].parse::<i32>().unwrap();
+    // let nz: i32 = args[3].parse::<i32>().unwrap();
 
     let (matrix, x, b, xexact) = HpcSparseMatrix::generate_matrix(nx, ny, nz);
 
