@@ -1,5 +1,5 @@
 [package]
-name = "hpccg-rs"
+name = "hpccg-rs-direct-serial"
 version = "0.1.0"
 edition = "2021"
 
