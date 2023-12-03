@@ -1,8 +1,8 @@
-use crate::ddot::ddot_idiomatic;
+use crate::ddot::ddot;
 use crate::mytimer::mytimer;
-use crate::sparsemv::sparsemv_idiomatic_vec;
-use crate::waxpby::waxpby_idiomatic;
-use super::hpc_sparse_matrix::IdiomaticHpcSparseMatrix;
+use crate::sparsemv::sparsemv;
+use crate::waxpby::waxpby;
+use super::hpc_sparse_matrix::HpcSparseMatrix;
 
 fn tick(t0: &mut f64) {
     *t0 = mytimer();
@@ -13,7 +13,7 @@ fn tock(t0: &f64, t: &mut f64) {
 }
 
 pub fn hpccg_direct(
-    matrix: &IdiomaticHpcSparseMatrix,
+    matrix: &HpcSparseMatrix,
     b: &Vec<f64>,
     x: &mut Vec<f64>,
     max_iter: i32,
@@ -53,19 +53,19 @@ pub fn hpccg_direct(
 
     // p is of length ncols, copy x to p for sparse MV operation
     tick(&mut t0);  //tick!(t0);
-    p = waxpby_idiomatic(1.0, x, 0.0, b);
+    p = waxpby(1.0, x, 0.0, b);
     tock(&t0, &mut t2);  //tock!(t0, t2);
 
     tick(&mut t0);
-    Ap = sparsemv_idiomatic_vec(&matrix, &p);
+    Ap = sparsemv(&matrix, &p);
     tock(&t0, &mut t3);
 
     tick(&mut t0);
-    r = waxpby_idiomatic(1.0, b, -1.0, &Ap);
+    r = waxpby(1.0, b, -1.0, &Ap);
     tock(&t0, &mut t2);
 
     tick(&mut t0);
-    rtrans = ddot_idiomatic(&r, &r);
+    rtrans = ddot(&r, &r);
     tock(&t0, &mut t1);
 
     *normr = rtrans.sqrt();
@@ -79,16 +79,16 @@ pub fn hpccg_direct(
 
         if k == 1 {
             tick(&mut t0);
-            p = waxpby_idiomatic(1.0, &r, 0.0, &r);
+            p = waxpby(1.0, &r, 0.0, &r);
             tock(&t0, &mut t2);
         } else {
             oldrtrans = rtrans;
             tick(&mut t0);
-            rtrans = ddot_idiomatic(&r,&r);
+            rtrans = ddot(&r,&r);
             tock(&t0, &mut t1);
             let beta = rtrans/oldrtrans;
             tick(&mut t0);
-            p = waxpby_idiomatic(1.0, &r, beta, &p);
+            p = waxpby(1.0, &r, beta, &p);
             tock(&t0, &mut t2);
         }
 
@@ -98,17 +98,17 @@ pub fn hpccg_direct(
         }
 
         tick(&mut t0);
-        Ap = sparsemv_idiomatic_vec(matrix, &p);
+        Ap = sparsemv(matrix, &p);
         tock(&t0, &mut t3);
 
         tick(&mut t0);
-        let alpha = ddot_idiomatic(&p, &Ap);
+        let alpha = ddot(&p, &Ap);
         tock(&t0, &mut t1);
 
         let alpha = rtrans/alpha;
         tick(&mut t0);
-        *x = waxpby_idiomatic(1.0, x, alpha, &p);
-        r = waxpby_idiomatic(1.0, &r, -alpha, &Ap);
+        *x = waxpby(1.0, x, alpha, &p);
+        r = waxpby(1.0, &r, -alpha, &Ap);
         tock(&t0, &mut t2);
         *niters = k;
     }
