@@ -56,5 +56,7 @@ Cargo.lock
 
 ### JetBrains IDE excludes ###
 .idea/workspace.xml
+.idea/usage.statistics.xml
+.idea/shelf/
 .idea/tasks.xml
 .idea/sonarlint/
