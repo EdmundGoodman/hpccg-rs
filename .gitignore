@@ -1,8 +1,5 @@
 ### Project-specific excludes ###
-analysis.txt
 *perf.data*
-hpccg-*.yaml
-test_HPCCG
 
 
 ### C++ excludes ###
