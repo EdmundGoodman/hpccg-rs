@@ -1,18 +1,19 @@
 use super::hpc_sparse_matrix::HpcSparseMatrix;
 
 pub fn sparsemv(matrix: &HpcSparseMatrix, x: &Vec<f64>) -> Vec<f64> {
-    let nrow = matrix.local_nrow as usize;
-
-    let mut y = Vec::with_capacity(x.len());
-    // todo: debug mov command
-    for row in matrix.data.iter() {
-        let mut sum = 0.0;
-        for (val, ind) in row.iter() {
-            sum += val * x[*ind];
-        }
-        y.push(sum);
-    }
-    y
+    // let mut y = Vec::with_capacity(x.len());
+    // // todo: debug mov command
+    // for row in matrix.data.iter() {
+    //     let mut sum = 0.0;
+    //     for (val, ind) in row.iter() {
+    //         sum += val * x[*ind];
+    //     }
+    //     y.push(sum);
+    // }
+    // y
+    matrix.data.iter().map(|row| {
+        row.iter().map(|(val, ind)| val * x[*ind]).sum()
+    }).collect()
 }
 
 #[test]
