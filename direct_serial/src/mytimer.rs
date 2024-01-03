@@ -11,7 +11,7 @@ pub fn mytimer() -> f64 {
 /// A function to get the wall clock time in seconds since the UNIX epoch.
 ///
 /// # Return values
-///  * The wall clock time in seconds since the UNIX epoch
+/// * The wall clock time in seconds since the UNIX epoch
 pub fn wall_mytimer() -> f64 {
     let tp = SystemTime::now()
         .duration_since(UNIX_EPOCH).unwrap();

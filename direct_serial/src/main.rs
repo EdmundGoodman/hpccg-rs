@@ -6,29 +6,18 @@ pub mod sparsemv;
 pub mod mytimer;
 pub mod hpccg;
 
-// use ddot::ddot_idiomatic;
-// use compute_residual::compute_residual_idiomatic;
-// use waxpby::waxpby_idiomatic;
-// use crate::mytimer::mytimer;
-
 use hpc_sparse_matrix::HpcSparseMatrix;
 use hpccg::hpccg_direct;
 
+
+/// The driver code for the calculating the conjugate gradient.
+///
+/// First,the progam generatess the matrix, right hand side vector,
+/// exact solution vector, and an initial guess. Then, it calls the
+/// HPCCG conjugate gradient solver on the matrix and associated data.
+/// Finally, it print the result of the solver, and information about
+/// the performance of the computation.
 fn main() {
-//     let vx = vec![1.0,2.0,3.0];
-//     let vy = vec![3.0,2.0,1.0];
-//     let r = ddot_idiomatic(&vx, &vy);
-//     println!("{:?} . {:?} = {r}", vx, vy);
-//
-//     let r = compute_residual_idiomatic(&vx, &vy);
-//     println!("residual({:?}, {:?}) = {r}", vx, vy);
-//
-//     let alpha = 4.0;
-//     let beta = 5.0;
-//     let r = waxpby_idiomatic(alpha, &vx, beta, &vy);
-//     println!("waxpby({:?}, {:?}) = {:?}", vx, vy, r);
-
-
     let (nx, ny, nz) = (25,25,25);
     let (matrix, x, b, xexact) = HpcSparseMatrix::generate_matrix(nx, ny, nz);
 
@@ -42,7 +31,6 @@ fn main() {
     hpccg_direct(
         &matrix, &b, &mut x, max_iter, tolerance, &mut niters, &mut normr, &mut times
     );
-
 
     let fniters = niters;
     let fnrow = matrix.total_nrow;
@@ -74,5 +62,4 @@ fn main() {
     println!("  DDOT: {:.4}", (fnops_ddot as f64)/times[1]/1.0e6);
     println!("  WAXPBY: {:.4}", (fnops_waxpby as f64)/times[2]/1.0e6);
     println!("  SPARSEMV: {:.4}", (fnops_sparsemv as f64)/times[3]/1.0e6);
-
 }
