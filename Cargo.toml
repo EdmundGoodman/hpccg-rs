@@ -3,13 +3,15 @@ name = "hpccg-rs-direct"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
+# https://nnethercote.github.io/perf-book/build-configuration.html
 [profile.release]
 debug = true
+codegen-units = 1
+lto = "fat"
+panic = "abort"
 
 [build]
-rustflags = ["-C", "symbol-mangling-version=v0"]
+rustflags = ["-C", "target-cpu=native"]
 
 [dependencies]
 libc = "0.2.149"
