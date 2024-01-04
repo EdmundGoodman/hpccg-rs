@@ -1,5 +1,5 @@
-use std::time::{SystemTime, UNIX_EPOCH};
 use std::mem::MaybeUninit;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Alias function to allow switching timers.
 pub fn mytimer() -> f64 {
@@ -11,8 +11,7 @@ pub fn mytimer() -> f64 {
 /// A function to get the wall clock time in seconds since the UNIX epoch.
 #[allow(dead_code)]
 pub fn wall_mytimer() -> f64 {
-    let tp = SystemTime::now()
-        .duration_since(UNIX_EPOCH).unwrap();
+    let tp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
     let seconds = tp.as_secs() as f64;
     let micro_seconds = tp.subsec_micros() as f64;
     seconds + micro_seconds / 1_000_000.0

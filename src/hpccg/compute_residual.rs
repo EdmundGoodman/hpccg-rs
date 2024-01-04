@@ -16,7 +16,6 @@ pub fn compute_residual(width: usize, actual: &[f64], expected: &[f64]) -> f64 {
         }
     }
     residual
-
 }
 
 #[test]

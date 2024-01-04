@@ -1,17 +1,16 @@
-pub mod sparse_matrix;
 pub mod compute_residual;
 mod ddot;
-mod waxpby;
 mod mytimer;
+pub mod sparse_matrix;
 mod sparsmv;
+mod waxpby;
 
-
-pub use sparse_matrix::SparseMatrix;
 pub use compute_residual::compute_residual;
-use mytimer::mytimer;
 use ddot::ddot;
-use waxpby::waxpby;
+use mytimer::mytimer;
+pub use sparse_matrix::SparseMatrix;
 use sparsmv::sparsemv;
+use waxpby::waxpby;
 
 /// Store the start time for a code section.
 fn tick(t0: &mut f64) {
@@ -22,7 +21,6 @@ fn tick(t0: &mut f64) {
 fn tock(t0: &f64, t: &mut f64) {
     *t += mytimer() - t0;
 }
-
 
 /// A method to computer the approximate solution to `Ax = b`
 ///
@@ -46,9 +44,8 @@ pub fn solver(
     b: &[f64],
     x: &[f64],
     max_iterations: i32,
-    tolerance: f64
+    tolerance: f64,
 ) -> (Vec<f64>, i32, f64, Vec<f64>) {
-    
     let t_begin: f64 = mytimer();
     let mut t_total: f64 = 0.0;
     let mut t_ddot: f64 = 0.0;
@@ -73,13 +70,12 @@ pub fn solver(
     let mut oldrtrans: f64 = 0.0;
 
     // let print_freq = (max_iter/10).max(1).min(50);
-    let mut print_freq = max_iterations /10;
+    let mut print_freq = max_iterations / 10;
     if print_freq > 50 {
         print_freq = 50;
     } else if print_freq < 1 {
         print_freq = 1;
     }
-
 
     // `p` is of length `ncols`, so copy `x` to `p` for sparse matrix-vector operation
     tick(&mut t_total);
@@ -114,16 +110,16 @@ pub fn solver(
         } else {
             oldrtrans = rtrans;
             tick(&mut t_total);
-            rtrans = ddot(nrow,&r,&r);
+            rtrans = ddot(nrow, &r, &r);
             tock(&t_total, &mut t_ddot);
-            let beta = rtrans/oldrtrans;
+            let beta = rtrans / oldrtrans;
             tick(&mut t_total);
             p = waxpby(nrow, 1.0, &r, beta, &p);
             tock(&t_total, &mut t_waxpby);
         }
 
         normr = rtrans.sqrt();
-        if k%print_freq == 0 || k+1 == max_iterations {
+        if k % print_freq == 0 || k + 1 == max_iterations {
             println!("Iteration = {k} , Residual = {normr:+.5e}");
         }
 
@@ -132,10 +128,10 @@ pub fn solver(
         tock(&t_total, &mut t_sparsemv);
 
         tick(&mut t_total);
-        let alpha = ddot(r.len(),&p, &Ap);
+        let alpha = ddot(r.len(), &p, &Ap);
         tock(&t_total, &mut t_ddot);
 
-        let alpha = rtrans/alpha;
+        let alpha = rtrans / alpha;
         tick(&mut t_total);
         result = waxpby(nrow, 1.0, &result, alpha, &p);
         r = waxpby(nrow, 1.0, &r, -alpha, &Ap);
@@ -147,10 +143,15 @@ pub fn solver(
         result,
         iteration,
         normr,
-        vec![mytimer() - t_begin, t_ddot, t_waxpby, t_sparsemv, t_mpi_allreduce]
+        vec![
+            mytimer() - t_begin,
+            t_ddot,
+            t_waxpby,
+            t_sparsemv,
+            t_mpi_allreduce,
+        ],
     )
 }
-
 
 #[test]
 fn test_solver() {
@@ -158,14 +159,12 @@ fn test_solver() {
     let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(nx, ny, nz);
     let max_iter = 150;
     let tolerance = 5e-40;
-    let (result, iterations, normr, _) = solver(
-        &matrix, &rhs, &guess, max_iter, tolerance,
-    );
+    let (result, iterations, normr, _) = solver(&matrix, &rhs, &guess, max_iter, tolerance);
     let residual = compute_residual(matrix.local_nrow, &result, &exact);
     assert!(normr < tolerance);
     assert!(iterations < max_iter);
     assert!(residual < 1e-15);
     for (actual, expected) in result.iter().zip(exact) {
-        assert!((expected-actual).abs() < 1e-5);
+        assert!((expected - actual).abs() < 1e-5);
     }
 }

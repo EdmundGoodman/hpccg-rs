@@ -32,9 +32,7 @@ pub struct SparseMatrix {
     pub list_of_inds: Vec<usize>,
 }
 
-
 impl SparseMatrix {
-
     /// Generates the initial mesh and its associated values.
     ///
     /// # Arguments
@@ -47,14 +45,18 @@ impl SparseMatrix {
     ///  * `guess` - Inital guess for the mesh.
     ///  * `rhs` - Right hand side.
     ///  * `exact` - Exact solution (as computed by a direct solver).
-    pub fn generate_matrix(nx: usize, ny: usize, nz: usize) -> (SparseMatrix, Vec<f64>, Vec<f64>, Vec<f64>) {
+    pub fn generate_matrix(
+        nx: usize,
+        ny: usize,
+        nz: usize,
+    ) -> (SparseMatrix, Vec<f64>, Vec<f64>, Vec<f64>) {
         let use_7pt_stencil = false;
 
         // The size of our sub-block (must be non-zero)
         let local_nrow = nx * ny * nz;
         assert!(local_nrow > 0);
         // The approximate number of non-zeros per row (excluding boundary nodes)
-        let local_nnz = 27*local_nrow;
+        let local_nnz = 27 * local_nrow;
         // Each processor gets a section of a chimney stack domain
         let start_row = 0;
         let stop_row = local_nrow - 1;
@@ -67,8 +69,8 @@ impl SparseMatrix {
         let mut ptr_to_diags: Vec<usize> = Vec::with_capacity(local_nrow);
 
         // Output data other than the sparse matrix
-        let mut guess : Vec<f64> = Vec::with_capacity(local_nrow);
-        let mut rhs : Vec<f64> = Vec::with_capacity(local_nrow);
+        let mut guess: Vec<f64> = Vec::with_capacity(local_nrow);
+        let mut rhs: Vec<f64> = Vec::with_capacity(local_nrow);
         let mut exact: Vec<f64> = Vec::with_capacity(local_nrow);
 
         // Allocate arrays that are of length local_nnz
@@ -88,7 +90,10 @@ impl SparseMatrix {
                     for sz in -1..=1 {
                         for sy in -1..=1 {
                             for sx in -1..=1 {
-                                let curcol = (currow as i32)+sz*(nx as i32)*(ny as i32)+sy*(nx as i32)+sx;
+                                let curcol = (currow as i32)
+                                    + sz * (nx as i32) * (ny as i32)
+                                    + sy * (nx as i32)
+                                    + sx;
                                 // Since we have a stack of nx by ny by nz domains , stacking
                                 // in the z direction, we check to see if sx and sy are
                                 // reaching outside of the domain, while the check for the
@@ -96,8 +101,13 @@ impl SparseMatrix {
                                 let sx_ix = (ix as i32) + sx;
                                 let sy_iy = (iy as i32) + sy;
                                 #[allow(clippy::collapsible_if)]
-                                if (sx_ix>=0) && (sx_ix<(nx as i32)) && (sy_iy>=0) && (sy_iy<(ny as i32)) && (curcol>=0 && curcol<(local_nrow as i32)) {
-                                    if !use_7pt_stencil || (sz*sz+sy*sy+sx*sx<=1) {
+                                if (sx_ix >= 0)
+                                    && (sx_ix < (nx as i32))
+                                    && (sy_iy >= 0)
+                                    && (sy_iy < (ny as i32))
+                                    && (curcol >= 0 && curcol < (local_nrow as i32))
+                                {
+                                    if !use_7pt_stencil || (sz * sz + sy * sy + sx * sx <= 1) {
                                         // This logic will skip over point that are not part of
                                         // a 7-pt stencil
                                         if (curcol as usize) == currow {
@@ -117,7 +127,7 @@ impl SparseMatrix {
                     }
                     nnz_in_row.push(nnzrow);
                     guess.push(0.0);
-                    rhs.push(27.0 - ((nnzrow-1) as f64));
+                    rhs.push(27.0 - ((nnzrow - 1) as f64));
                     exact.push(1.0);
                 }
             }
@@ -142,7 +152,6 @@ impl SparseMatrix {
     }
 }
 
-
 #[test]
 fn test_sparse_matrix() {
     let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(2, 2, 2);
@@ -152,23 +161,40 @@ fn test_sparse_matrix() {
 
     println!("{:?}", matrix.list_of_vals);
 
-    let vals_in_row: Vec<f64> = matrix.ptr_to_vals_in_row.into_iter().map(|x| matrix.list_of_vals[x]).collect();
-    let inds_in_row: Vec<usize> = matrix.ptr_to_inds_in_row.into_iter().map(|x| matrix.list_of_inds[x]).collect();
-    let diags: Vec<f64> = matrix.ptr_to_diags.into_iter().map(|x| matrix.list_of_vals[x]).collect();
-    assert_eq!(vals_in_row, vec![27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]);
+    let vals_in_row: Vec<f64> = matrix
+        .ptr_to_vals_in_row
+        .into_iter()
+        .map(|x| matrix.list_of_vals[x])
+        .collect();
+    let inds_in_row: Vec<usize> = matrix
+        .ptr_to_inds_in_row
+        .into_iter()
+        .map(|x| matrix.list_of_inds[x])
+        .collect();
+    let diags: Vec<f64> = matrix
+        .ptr_to_diags
+        .into_iter()
+        .map(|x| matrix.list_of_vals[x])
+        .collect();
+    assert_eq!(
+        vals_in_row,
+        vec![27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]
+    );
     assert_eq!(inds_in_row, vec![0; 8]);
     assert_eq!(diags, vec![27.0; 8]);
 
-    let expected_vals =
-        vec![27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0,
-             -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0,
-             -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0,
-             -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0,
-             -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0];
-    let expected_inds =
-        vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4,
-             5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1,
-             2, 3, 4, 5, 6, 7];
+    let expected_vals = vec![
+        27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0,
+        -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0,
+        -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
+        27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0,
+        -1.0, -1.0, -1.0, 27.0,
+    ];
+    let expected_inds = vec![
+        0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5,
+        6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3,
+        4, 5, 6, 7,
+    ];
     assert_eq!(matrix.list_of_vals, expected_vals);
     assert_eq!(matrix.list_of_inds, expected_inds);
 

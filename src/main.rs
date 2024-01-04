@@ -21,10 +21,9 @@ fn main() {
     let max_iter = 150;
     let tolerance = 0.0;
 
-    let (result, iterations, normr, times) = hpccg::solver(
-        &matrix, &rhs, &guess, max_iter, tolerance,
-    );
-    
+    let (result, iterations, normr, times) =
+        hpccg::solver(&matrix, &rhs, &guess, max_iter, tolerance);
+
     let ddot_flops = (iterations * 4 * matrix.total_nrow as i32) as i64;
     let waxpby_flops = (iterations * 6 * matrix.total_nrow as i32) as i64;
     let sparsemv_flops = (iterations * 2 * matrix.total_nnz as i32) as i64;
@@ -49,9 +48,12 @@ fn main() {
     println!("  WAXPBY: {waxpby_flops:.4}");
     println!("  SPARSEMV: {sparsemv_flops:.4}");
     println!("MFLOPS Summary:");
-    println!("  Total: {:.4}", (total_flops as f64)/times[0]/1.0e6);
-    println!("  DDOT: {:.4}", (ddot_flops as f64)/times[1]/1.0e6);
-    println!("  WAXPBY: {:.4}", (waxpby_flops as f64)/times[2]/1.0e6);
-    println!("  SPARSEMV: {:.4}", (sparsemv_flops as f64)/times[3]/1.0e6);
+    println!("  Total: {:.4}", (total_flops as f64) / times[0] / 1.0e6);
+    println!("  DDOT: {:.4}", (ddot_flops as f64) / times[1] / 1.0e6);
+    println!("  WAXPBY: {:.4}", (waxpby_flops as f64) / times[2] / 1.0e6);
+    println!(
+        "  SPARSEMV: {:.4}",
+        (sparsemv_flops as f64) / times[3] / 1.0e6
+    );
     println!("Difference between computed and exact = {residual:.5e}.");
 }

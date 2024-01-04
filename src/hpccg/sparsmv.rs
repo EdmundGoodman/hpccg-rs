@@ -15,14 +15,14 @@ pub fn sparsemv(matrix: &SparseMatrix, vector: &[f64]) -> Vec<f64> {
         let start_ind_ind = matrix.ptr_to_inds_in_row[i];
         let cur_nnz = matrix.nnz_in_row[i];
         for j in 0..cur_nnz {
-            sum += matrix.list_of_vals[start_val_ind+j] * vector[matrix.list_of_inds[start_ind_ind+j]];
+            sum += matrix.list_of_vals[start_val_ind + j]
+                * vector[matrix.list_of_inds[start_ind_ind + j]];
         }
         result.push(sum);
     }
 
     result
 }
-
 
 #[test]
 fn test_sparsemv() {
@@ -32,8 +32,15 @@ fn test_sparsemv() {
     assert_eq!(vy, vec![400.0; 8]);
 
     let (matrix, _, _, _) = SparseMatrix::generate_matrix(3, 3, 3);
-    let vx = vec![20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 10.0, 1.0, 10.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0];
-    let expected_vy = vec![461.0, 287.0, 461.0, 287.0, 21.0, 287.0, 461.0, 287.0, 461.0, 287.0, 21.0, 287.0, 21.0, -385.0, 21.0, 287.0, 21.0, 287.0, 461.0, 287.0, 461.0, 287.0, 21.0, 287.0, 461.0, 287.0, 461.0];
+    let vx = vec![
+        20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 10.0, 1.0, 10.0,
+        16.0, 10.0, 16.0, 20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0,
+    ];
+    let expected_vy = vec![
+        461.0, 287.0, 461.0, 287.0, 21.0, 287.0, 461.0, 287.0, 461.0, 287.0, 21.0, 287.0, 21.0,
+        -385.0, 21.0, 287.0, 21.0, 287.0, 461.0, 287.0, 461.0, 287.0, 21.0, 287.0, 461.0, 287.0,
+        461.0,
+    ];
     let vy = sparsemv(&matrix, &vx);
     assert_eq!(vy, expected_vy);
 }
