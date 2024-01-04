@@ -23,9 +23,9 @@ fn main() {
     let (result, iterations, normr, times) =
         hpccg::solver(&matrix, &rhs, &guess, max_iter, tolerance);
 
-    let ddot_flops = (iterations * 4 * matrix.total_nrow) as i64;
-    let waxpby_flops = (iterations * 6 * matrix.total_nrow) as i64;
-    let sparsemv_flops = (iterations * 2 * matrix.total_nnz) as i64;
+    let ddot_flops = iterations as i64 * 4 * matrix.total_nrow as i64;
+    let waxpby_flops = iterations as i64 * 6 * matrix.total_nrow as i64;
+    let sparsemv_flops = iterations as i64 * 2 * matrix.total_nnz as i64;
     let total_flops = ddot_flops + waxpby_flops + sparsemv_flops;
     let residual = hpccg::compute_residual(matrix.local_nrow as usize, &result, &exact);
 
