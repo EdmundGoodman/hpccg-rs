@@ -15,7 +15,7 @@ fn main() {
         args[1].parse::<i32>().expect("Failed to parse number!"),
         args[2].parse::<i32>().expect("Failed to parse number!"),
         args[3].parse::<i32>().expect("Failed to parse number!"),
-    ); // (25,25,25);
+    ); // (25, 25, 25);
 
     let (matrix, guess, rhs, _) = hpccg::SparseMatrix::generate_matrix(nx, ny, nz);
     let max_iter = 150;
@@ -24,10 +24,10 @@ fn main() {
     let (_, iterations, normr, times) = hpccg::solver(
         &matrix, &rhs, &guess, max_iter, tolerance,
     );
-
-    let ddot_flops = iterations * 4 * matrix.total_nrow;
-    let waxpby_flops = iterations * 6 * matrix.total_nrow;
-    let sparsemv_flops = iterations * 2 * matrix.total_nnz;
+    
+    let ddot_flops = (iterations * 4 * matrix.total_nrow) as i64;
+    let waxpby_flops = (iterations * 6 * matrix.total_nrow) as i64;
+    let sparsemv_flops = (iterations * 2 * matrix.total_nnz) as i64;
     let total_flops = ddot_flops + waxpby_flops + sparsemv_flops;
 
     println!("Mini-Application Name: hpccg");
