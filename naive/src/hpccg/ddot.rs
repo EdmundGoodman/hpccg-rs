@@ -7,7 +7,7 @@
 /// * `width` - The width of both input vectors.
 /// * `lhs` - The first input vector.
 /// * `rhs` - The second input vector.
-pub fn ddot(width: usize, lhs: &Vec<f64>, rhs: &Vec<f64>) -> f64 {
+pub fn ddot(width: usize, lhs: &[f64], rhs: &[f64]) -> f64 {
     let mut result: f64 = 0.0;
     if std::ptr::eq(lhs, rhs) {
         for i in 0..width {
@@ -24,8 +24,8 @@ pub fn ddot(width: usize, lhs: &Vec<f64>, rhs: &Vec<f64>) -> f64 {
 #[test]
 fn test_ddot() {
     let width = 3;
-    let lhs = vec![1.0,2.0,3.0];
-    let rhs = vec![3.0,2.0,1.0];
+    let lhs = vec![1.0, 2.0, 3.0];
+    let rhs = vec![3.0, 2.0, 1.0];
     let result = ddot(width, &lhs, &rhs);
     assert_eq!(result, 10.0);
     let result = ddot(width, &lhs, &lhs);
