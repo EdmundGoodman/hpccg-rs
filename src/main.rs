@@ -1,9 +1,14 @@
 pub mod hpccg;
 
-use hpccg::{solver, SparseMatrix};
-
 use std::env;
 
+/// The driver code for the calculating the conjugate gradient.
+///
+/// First,the progam generatess the matrix, right hand side vector,
+/// exact solution vector, and an initial guess. Then, it calls the
+/// HPCCG conjugate gradient solver on the matrix and associated data.
+/// Finally, it print the result of the solver, and information about
+/// the performance of the computation.
 fn main() {
     let args: Vec<String> = env::args().collect();
     let (nx, ny, nz) = (
@@ -11,10 +16,41 @@ fn main() {
         args[2].parse::<i32>().expect("Failed to parse number!"),
         args[3].parse::<i32>().expect("Failed to parse number!"),
     );
-    println!("{nx} {ny} {nz}");
+    // let (nx, ny, nz) = (25,25,25);
 
-    let matrix = SparseMatrix { start_row: 2, stop_row: 2 };
-    let result = solver(matrix);
+    let (matrix, guess, rhs, exact) = hpccg::SparseMatrix::generate_matrix(nx, ny, nz);
+    let max_iter = 150;
+    let tolerance = 0.0;
 
-    println!("{result}");
+    let (_, iterations, normr, times) = hpccg::solver(
+        &matrix, &rhs, &guess, max_iter, tolerance,
+    );
+
+    let ddot_flops = iterations * 4 * matrix.total_nrow;
+    let waxpby_flops = iterations * 6 * matrix.total_nrow;
+    let sparsemv_flops = iterations * 2 * matrix.total_nnz;
+    let total_flops = ddot_flops + waxpby_flops + sparsemv_flops;
+
+    println!("Mini-Application Name: hpccg");
+    println!("Mini-Application Version: 1.0");
+    println!("Parallelism:\n  MPI not enabled:\n  OpenMP not enabled:");
+    println!("Dimensions:\n  nx: {nx}\n  ny: {ny}\n  nz: {nz}");
+    println!("Number of iterations: {iterations}");
+    println!("Final residual: {normr:.5e}");
+    println!("#********** Performance Summary (times in sec) ***********");
+    println!("Time Summary:");
+    println!("  Total: {:.4}", times[0]);
+    println!("  DDOT: {:.4}", times[1]);
+    println!("  WAXPBY: {:.4}", times[2]);
+    println!("  SPARSEMV: {:.4}", times[3]);
+    println!("FLOPS Summary:");
+    println!("  Total: {total_flops:.4}");
+    println!("  DDOT: {ddot_flops:.4}");
+    println!("  WAXPBY: {waxpby_flops:.4}");
+    println!("  SPARSEMV: {sparsemv_flops:.4}");
+    println!("MFLOPS Summary:");
+    println!("  Total: {:.4}", (total_flops as f64)/times[0]/1.0e6);
+    println!("  DDOT: {:.4}", (ddot_flops as f64)/times[1]/1.0e6);
+    println!("  WAXPBY: {:.4}", (waxpby_flops as f64)/times[2]/1.0e6);
+    println!("  SPARSEMV: {:.4}", (sparsemv_flops as f64)/times[3]/1.0e6);
 }
