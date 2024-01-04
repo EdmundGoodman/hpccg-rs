@@ -3,6 +3,7 @@ name = "hpccg-rs-naive"
 version = "0.1.0"
 edition = "2021"
 
+# https://nnethercote.github.io/perf-book/build-configuration.html
 [profile.release]
 debug = true
 #codegen-units = 1

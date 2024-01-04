@@ -1,5 +1,5 @@
 [package]
-name = "hpccg-rs-direct"
+name = "hpccg-rs-indexed"
 version = "0.1.0"
 edition = "2021"
 
