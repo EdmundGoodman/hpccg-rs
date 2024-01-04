@@ -5,7 +5,7 @@ set -e
 # Set up for the batch job
 mkdir -p joboutputs
 rm -f joboutputs/most_recent.out joboutputs/most_recent.err
-CARGO_TARGET_DIR=./joboutputs/target cargo build --manifest-path=${1:-..}/Cargo.toml --release
+CARGO_TARGET_DIR=./joboutputs/target cargo build --manifest-path=${1:-../Cargo.toml} --release
 
 # Submit the batch to Kudu, and record its batch number
 BATCH=$( sbatch kudu.sbatch )
