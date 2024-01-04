@@ -61,6 +61,9 @@ impl SparseMatrix {
         let start_row = 0;
         let stop_row = local_nrow - 1;
 
+        // In non-mpi mode, the total row, column, and non-zero sizes are the same as the local ones
+        let (total_nnz, total_nrow, local_ncol) = (local_nnz, local_nrow, local_nrow);
+
         // The number of non-zero numbers in each row
         let mut nnz_in_row = Vec::with_capacity(local_nrow);
         // Arrays of reference-counted pointers
@@ -137,9 +140,9 @@ impl SparseMatrix {
             start_row,
             stop_row,
             local_nrow,
-            total_nnz: local_nnz,
-            total_nrow: local_nrow,
-            local_ncol: local_nrow,
+            total_nnz,
+            total_nrow,
+            local_ncol,
             local_nnz,
             nnz_in_row,
             ptr_to_vals_in_row,
