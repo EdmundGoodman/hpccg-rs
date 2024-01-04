@@ -55,10 +55,10 @@ pub fn solver(
     let mut t_sparsemv: f64 = 0.0;
     let mut t_mpi_allreduce: f64 = 0.0;
 
-    let nrow = A.local_nrow as usize;
-    let ncol = A.local_ncol as usize;
+    let nrow = A.local_nrow;
+    let ncol = A.local_ncol;
     // `rank` only used in MPI mode
-    let rank: i32 = 0;
+    let _rank: i32 = 0;
 
     let mut r: Vec<f64> = Vec::with_capacity(nrow);
     let mut p: Vec<f64> = Vec::with_capacity(ncol);
@@ -160,7 +160,7 @@ fn test_solver() {
     let (result, iterations, normr, _) = solver(
         &matrix, &rhs, &guess, max_iter, tolerance,
     );
-    let residual = compute_residual(matrix.local_nrow as usize, &result, &exact);
+    let residual = compute_residual(matrix.local_nrow, &result, &exact);
     assert!(normr < tolerance);
     assert!(iterations < max_iter);
     assert!(residual < 1e-15);
