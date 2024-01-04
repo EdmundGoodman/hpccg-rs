@@ -10,12 +10,16 @@
 pub fn ddot(width: usize, lhs: &[f64], rhs: &[f64]) -> f64 {
     let mut result: f64 = 0.0;
     if std::ptr::eq(lhs, rhs) {
+        debug_assert!(lhs.len() == width);
         for i in 0..width {
-            result += lhs[i] * lhs[i];
+            // result += lhs[i] * lhs[i];
+            result += unsafe { lhs.get_unchecked(i) * lhs.get_unchecked(i) };
         }
     } else {
+        debug_assert!(lhs.len() == width && rhs.len() == width);
         for i in 0..width {
-            result += lhs[i] * rhs[i];
+            // result += lhs[i] * rhs[i];
+            result += unsafe { lhs.get_unchecked(i) * rhs.get_unchecked(i) };
         }
     }
     result
