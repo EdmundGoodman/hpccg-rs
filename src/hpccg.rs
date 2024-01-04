@@ -26,7 +26,7 @@ fn tock(t0: &f64, t: &mut f64) {
 /// A method to computer the approximate solution to `Ax = b`
 ///
 /// # Arguments
-/// * `matrix` - The input sparse matrix.
+/// * `A` - The input sparse matrix.
 /// * `b` - The known right hand side vector.
 /// * `x` - The current approximate solution, which starts as the initial guess.
 /// * `max_iter` - The maximum number of iterations to perform.
@@ -40,31 +40,30 @@ fn tock(t0: &f64, t: &mut f64) {
 ///             solution.
 /// * `times` - An array of times spent for each operation (ddot/waxpby/sparse_mv/total).
 pub fn solver(
-    matrix: &SparseMatrix,
-    rhs: &Vec<f64>,
-    guess: &Vec<f64>,
+    A: &SparseMatrix,
+    b: &Vec<f64>,
+    x: &Vec<f64>,
     max_iterations: i32,
     tolerance: f64
 ) -> (Vec<f64>, i32, f64, Vec<f64>) {
     
     let t_begin: f64 = mytimer();
-    let mut t0: f64 = 0.0;
-    let mut t1: f64 = 0.0;
-    let mut t2: f64 = 0.0;
-    let mut t3: f64 = 0.0;
-    // `t4` only used in MPI mode
-    let t4: f64 = 0.0;
+    let mut t_total: f64 = 0.0;
+    let mut t_ddot: f64 = 0.0;
+    let mut t_waxpby: f64 = 0.0;
+    let mut t_sparsemv: f64 = 0.0;
+    let mut t_mpi_allreduce: f64 = 0.0;
 
-    let nrow = matrix.local_nrow as usize;
-    let ncol = matrix.local_ncol as usize;
+    let nrow = A.local_nrow as usize;
+    let ncol = A.local_ncol as usize;
     // `rank` only used in MPI mode
     let rank: i32 = 0;
 
-    let mut r: Vec<f64> = Vec::with_capacity(nrow as usize);
-    let mut p: Vec<f64> = Vec::with_capacity(ncol as usize);
-    let mut Ap: Vec<f64> = Vec::with_capacity(nrow as usize);
+    let mut r: Vec<f64> = Vec::with_capacity(nrow);
+    let mut p: Vec<f64> = Vec::with_capacity(ncol);
+    let mut Ap: Vec<f64> = Vec::with_capacity(nrow);
 
-    let mut result = guess.clone();
+    let mut result = x.clone();
     let mut iteration = 0;
     let mut normr = 0.0;
     let mut rtrans: f64 = 0.0;
@@ -79,22 +78,22 @@ pub fn solver(
     }
 
 
-    // p is of length ncols, copy x to p for sparse MV operation
-    tick(&mut t0);
-    p = waxpby(result.len(), 1.0, &result, 0.0, rhs);
-    tock(&t0, &mut t2);
+    // `p` is of length `ncols`, so copy `x` to `p` for sparse matrix-vector operation
+    tick(&mut t_total);
+    p = waxpby(result.len(), 1.0, &result, 0.0, b);
+    tock(&t_total, &mut t_waxpby);
 
-    tick(&mut t0);
-    Ap = sparsemv(&matrix, &p);
-    tock(&t0, &mut t3);
+    tick(&mut t_total);
+    Ap = sparsemv(&A, &p);
+    tock(&t_total, &mut t_sparsemv);
 
-    tick(&mut t0);
-    r = waxpby(result.len(), 1.0, rhs, -1.0, &Ap);
-    tock(&t0, &mut t2);
+    tick(&mut t_total);
+    r = waxpby(result.len(), 1.0, b, -1.0, &Ap);
+    tock(&t_total, &mut t_waxpby);
 
-    tick(&mut t0);
+    tick(&mut t_total);
     rtrans = ddot(r.len(), &r, &r);
-    tock(&t0, &mut t1);
+    tock(&t_total, &mut t_ddot);
 
     normr = rtrans.sqrt();
 
@@ -106,18 +105,18 @@ pub fn solver(
         }
 
         if k == 1 {
-            tick(&mut t0);
+            tick(&mut t_total);
             p = waxpby(nrow, 1.0, &r, 0.0, &r);
-            tock(&t0, &mut t2);
+            tock(&t_total, &mut t_waxpby);
         } else {
             oldrtrans = rtrans;
-            tick(&mut t0);
+            tick(&mut t_total);
             rtrans = ddot(nrow,&r,&r);
-            tock(&t0, &mut t1);
+            tock(&t_total, &mut t_ddot);
             let beta = rtrans/oldrtrans;
-            tick(&mut t0);
+            tick(&mut t_total);
             p = waxpby(nrow, 1.0, &r, beta, &p);
-            tock(&t0, &mut t2);
+            tock(&t_total, &mut t_waxpby);
         }
 
         normr = rtrans.sqrt();
@@ -125,26 +124,26 @@ pub fn solver(
             println!("Iteration = {k} , Residual = {normr:+.5e}");
         }
 
-        tick(&mut t0);
-        Ap = sparsemv(matrix, &p);
-        tock(&t0, &mut t3);
+        tick(&mut t_total);
+        Ap = sparsemv(A, &p);
+        tock(&t_total, &mut t_sparsemv);
 
-        tick(&mut t0);
+        tick(&mut t_total);
         let alpha = ddot(r.len(),&p, &Ap);
-        tock(&t0, &mut t1);
+        tock(&t_total, &mut t_ddot);
 
         let alpha = rtrans/alpha;
-        tick(&mut t0);
+        tick(&mut t_total);
         result = waxpby(nrow, 1.0, &result, alpha, &p);
         r = waxpby(nrow, 1.0, &r, -alpha, &Ap);
-        tock(&t0, &mut t2);
+        tock(&t_total, &mut t_waxpby);
         iteration = k;
     }
 
-    let times = vec![
-        mytimer() - t_begin,
-        t1, t2, t3, t4
-    ];
-
-    (result, iteration, normr, times)
+    (
+        result,
+        iteration,
+        normr,
+        vec![mytimer() - t_begin, t_ddot, t_waxpby, t_sparsemv, t_mpi_allreduce]
+    )
 }

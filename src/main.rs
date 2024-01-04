@@ -15,10 +15,9 @@ fn main() {
         args[1].parse::<i32>().expect("Failed to parse number!"),
         args[2].parse::<i32>().expect("Failed to parse number!"),
         args[3].parse::<i32>().expect("Failed to parse number!"),
-    );
-    // let (nx, ny, nz) = (25,25,25);
+    ); // (25,25,25);
 
-    let (matrix, guess, rhs, exact) = hpccg::SparseMatrix::generate_matrix(nx, ny, nz);
+    let (matrix, guess, rhs, _) = hpccg::SparseMatrix::generate_matrix(nx, ny, nz);
     let max_iter = 150;
     let tolerance = 0.0;
 
