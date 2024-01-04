@@ -11,22 +11,17 @@ pub fn sparsemv(matrix: &SparseMatrix, vector: &[f64]) -> Vec<f64> {
     let mut result = Vec::with_capacity(vector.len());
     for i in 0..nrow {
         let mut sum = 0.0;
-
-        debug_assert!(nrow <= matrix.ptr_to_vals_in_row.len());
-        debug_assert!(nrow <= matrix.ptr_to_inds_in_row.len());
+        debug_assert!(nrow <= matrix.row_start_inds.len());
         debug_assert!(nrow <= matrix.nnz_in_row.len());
-        let start_val_ind = unsafe { matrix.ptr_to_vals_in_row.get_unchecked(i) };
-        let start_ind_ind = unsafe { matrix.ptr_to_inds_in_row.get_unchecked(i) };
+        let start_ind = unsafe { *matrix.row_start_inds.get_unchecked(i) };
         let cur_nnz = unsafe { *matrix.nnz_in_row.get_unchecked(i) };
-        debug_assert!(start_val_ind + cur_nnz <= matrix.list_of_vals.len());
-        debug_assert!(start_ind_ind + cur_nnz <= matrix.list_of_inds.len());
+        debug_assert!(start_ind + cur_nnz <= matrix.list_of_vals.len());
         for j in 0..cur_nnz {
             sum += unsafe {
-                matrix.list_of_vals.get_unchecked(start_val_ind + j)
-                    * vector.get_unchecked(*matrix.list_of_inds.get_unchecked(start_ind_ind + j))
+                matrix.list_of_vals.get_unchecked(start_ind + j)
+                    * vector.get_unchecked(*matrix.list_of_inds.get_unchecked(start_ind + j))
             };
         }
-
         result.push(sum);
     }
 
