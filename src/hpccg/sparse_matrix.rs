@@ -20,19 +20,19 @@ use std::cell::RefCell;
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct SparseMatrix {
-    pub start_row: i32,
-    pub stop_row: i32,
-    pub total_nrow: i32,
-    pub total_nnz: i32,
-    pub local_nrow: i32,
-    pub local_ncol: i32,
-    pub local_nnz: i32,
-    pub nnz_in_row: Vec<i64>,
-    pub ptr_to_vals_in_row: Vec<Rc<RefCell<f64>>>,
-    pub ptr_to_inds_in_row: Vec<Rc<RefCell<i32>>>,
-    pub ptr_to_diags: Vec<Rc<RefCell<f64>>>,
-    pub list_of_vals: Vec<Rc<RefCell<f64>>>,
-    pub list_of_inds: Vec<Rc<RefCell<i32>>>,
+    pub start_row: usize,
+    pub stop_row: usize,
+    pub total_nrow: usize,
+    pub total_nnz: usize,
+    pub local_nrow: usize,
+    pub local_ncol: usize,
+    pub local_nnz: usize,
+    pub nnz_in_row: Vec<usize>,
+    pub ptr_to_vals_in_row: Vec<usize>, // can just become usizes? (could post-process into pointers <&'a f64>)
+    pub ptr_to_inds_in_row: Vec<usize>,
+    pub ptr_to_diags: Vec<usize>,
+    pub list_of_vals: Vec<f64>,
+    pub list_of_inds: Vec<usize>,
 }
 
 
@@ -50,7 +50,7 @@ impl SparseMatrix {
     ///  * `guess` - Inital guess for the mesh.
     ///  * `rhs` - Right hand side.
     ///  * `exact` - Exact solution (as computed by a direct solver).
-    pub fn generate_matrix(nx: i32, ny: i32, nz: i32) -> (SparseMatrix, Vec<f64>, Vec<f64>, Vec<f64>) {
+    pub fn generate_matrix(nx: usize, ny: usize, nz: usize) -> (SparseMatrix, Vec<f64>, Vec<f64>, Vec<f64>) {
         let use_7pt_stencil = false;
 
         // The size of our sub-block (must be non-zero)
@@ -62,25 +62,21 @@ impl SparseMatrix {
         let start_row = 0;
         let stop_row = local_nrow - 1;
 
-
         // The number of non-zero numbers in each row
-        let mut nnz_in_row = Vec::with_capacity(local_nrow as usize);
+        let mut nnz_in_row = Vec::with_capacity(local_nrow);
         // Arrays of reference-counted pointers
-        let mut ptr_to_vals_in_row: Vec<Rc<RefCell<f64>>> = Vec::with_capacity(local_nrow as usize);
-        let mut ptr_to_inds_in_row: Vec<Rc<RefCell<i32>>> = Vec::with_capacity(local_nrow as usize);
-        let mut ptr_to_diags: Vec<Rc<RefCell<f64>>> = Vec::with_capacity(local_nrow as usize);
+        let mut ptr_to_vals_in_row: Vec<usize> = Vec::with_capacity(local_nrow);
+        let mut ptr_to_inds_in_row: Vec<usize> = Vec::with_capacity(local_nrow);
+        let mut ptr_to_diags: Vec<usize> = Vec::with_capacity(local_nrow);
 
         // Output data other than the sparse matrix
-        let mut guess : Vec<f64> = Vec::with_capacity(local_nrow as usize);
-        let mut rhs : Vec<f64> = Vec::with_capacity(local_nrow as usize);
-        let mut exact: Vec<f64> = Vec::with_capacity(local_nrow as usize);
+        let mut guess : Vec<f64> = Vec::with_capacity(local_nrow);
+        let mut rhs : Vec<f64> = Vec::with_capacity(local_nrow);
+        let mut exact: Vec<f64> = Vec::with_capacity(local_nrow);
 
         // Allocate arrays that are of length local_nnz
-        // Either, we do reference counting, or we make the data structure less insane
-        // let mut list_of_vals: Vec<Rc<RefCell<f64>>> = vec![Rc::new(RefCell::new(0.0)); local_nnz as usize]; //Vec::with_capacity(local_nnz as usize);
-        let list_of_vals: Vec<Rc<RefCell<f64>>> = (0..local_nnz).map(|_| Rc::new(RefCell::new(0.0))).collect();
-        // let mut list_of_inds: Vec<Rc<RefCell<i32>>> = vec![Rc::new(RefCell::new(0)); local_nnz as usize]; //Vec::with_capacity(local_nnz as usize);
-        let list_of_inds: Vec<Rc<RefCell<i32>>> = (0..local_nnz).map(|_| Rc::new(RefCell::new(0))).collect();
+        let mut list_of_vals: Vec<f64> = Vec::with_capacity(local_nnz);
+        let mut list_of_inds: Vec<usize> = Vec::with_capacity(local_nnz);
 
         let mut curvalind: usize = 0;
         let mut curindind: usize = 0;
@@ -88,31 +84,32 @@ impl SparseMatrix {
         for iz in 0..nz {
             for iy in 0..ny {
                 for ix in 0..nx {
-
-                    let currow = start_row+iz*nx*ny+iy*nx+ix;
-                    let mut nnzrow = 0;
-                    ptr_to_vals_in_row.push(Rc::clone(&list_of_vals[curvalind]));
-                    ptr_to_inds_in_row.push(Rc::clone(&list_of_inds[curindind]));
-
+                    let currow = start_row + iz * nx * ny + iy * nx + ix;
+                    let mut nnzrow: usize = 0;
+                    ptr_to_vals_in_row.push(curvalind);
+                    ptr_to_inds_in_row.push(curindind);
                     for sz in -1..=1 {
                         for sy in -1..=1 {
                             for sx in -1..=1 {
-                                let curcol = currow+sz*nx*ny+sy*nx+sx;
-                                if (ix+sx>=0) && (ix+sx<nx) && (iy+sy>=0) && (iy+sy<ny) && (curcol>=0 && curcol<local_nrow) {
-                                    // This logic will skip over point that are not part of a 7-pt stencil
+                                let curcol = (currow as i32)+sz*(nx as i32)*(ny as i32)+sy*(nx as i32)+sx;
+                                // Since we have a stack of nx by ny by nz domains , stacking
+                                // in the z direction, we check to see if sx and sy are
+                                // reaching outside of the domain, while the check for the
+                                // curcol being valid is sufficient to check the z values
+                                let sx_ix = (ix as i32) + sx;
+                                let sy_iy = (iy as i32) + sy;
+                                if (sx_ix>=0) && (sx_ix<(nx as i32)) && (sy_iy>=0) && (sy_iy<(ny as i32)) && (curcol>=0 && curcol<(local_nrow as i32)) {
                                     if !use_7pt_stencil || (sz*sz+sy*sy+sx*sx<=1) {
-                                        if curcol==currow {
-                                            ptr_to_diags.push(Rc::clone(&list_of_vals[curvalind]));
-                                            // *curvalptr++ = 27.0; // post-increment
-                                            *list_of_vals[curvalind].borrow_mut() = 27.0;
-                                            curvalind += 1;
+                                        // This logic will skip over point that are not part of
+                                        // a 7-pt stencil
+                                        if (curcol as usize) == currow {
+                                            ptr_to_diags.push(curvalind);
+                                            list_of_vals.push(27.0);
                                         } else {
-                                            // *curvalptr++ = -1.0; // post-increment
-                                            *list_of_vals[curvalind].borrow_mut() = -1.0;
-                                            curvalind += 1;
+                                            list_of_vals.push(-1.0);
                                         }
-                                        // *curindptr++ = curcol; // post-increment
-                                        *list_of_inds[curindind].borrow_mut() = curcol;
+                                        curvalind += 1;
+                                        list_of_inds.push(curcol as usize);
                                         curindind += 1;
                                         nnzrow += 1;
                                     }
@@ -143,7 +140,6 @@ impl SparseMatrix {
             list_of_vals,
             list_of_inds,
         };
-
         (matrix, guess, rhs, exact)
     }
 }
@@ -152,46 +148,31 @@ impl SparseMatrix {
 #[test]
 fn test_sparse_matrix() {
     let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(2, 2, 2);
-
     assert_eq!(matrix.local_nrow, 8);
     assert_eq!(matrix.local_nnz, 216);
     assert_eq!(matrix.nnz_in_row, vec![8; 8]);
 
-    let vals_in_row: Vec<f64> = matrix.ptr_to_vals_in_row.iter().map(|x| *x.borrow()).collect();
-    let inds_in_row: Vec<i32> = matrix.ptr_to_inds_in_row.iter().map(|x| *x.borrow()).collect();
-    let diags: Vec<f64> = matrix.ptr_to_diags.iter().map(|x| *x.borrow()).collect();
+    println!("{:?}", matrix.list_of_vals);
+
+    let vals_in_row: Vec<f64> = matrix.ptr_to_vals_in_row.into_iter().map(|x| matrix.list_of_vals[x]).collect();
+    let inds_in_row: Vec<usize> = matrix.ptr_to_inds_in_row.into_iter().map(|x| matrix.list_of_inds[x]).collect();
+    let diags: Vec<f64> = matrix.ptr_to_diags.into_iter().map(|x| matrix.list_of_vals[x]).collect();
     assert_eq!(vals_in_row, vec![27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]);
     assert_eq!(inds_in_row, vec![0; 8]);
     assert_eq!(diags, vec![27.0; 8]);
 
-    let vals: Vec<f64> = matrix.list_of_vals.iter().map(|x| *x.borrow()).collect();
     let expected_vals =
         vec![27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0,
              -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0,
              -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0,
              -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0,
-             -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-    let inds: Vec<i32> = matrix.list_of_inds.iter().map(|x| *x.borrow()).collect();
+             -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0];
     let expected_inds =
         vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4,
              5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1,
-             2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    assert_eq!(vals, expected_vals);
-    assert_eq!(inds, expected_inds);
+             2, 3, 4, 5, 6, 7];
+    assert_eq!(matrix.list_of_vals, expected_vals);
+    assert_eq!(matrix.list_of_inds, expected_inds);
 
     assert_eq!(guess, vec![0.0; 8]);
     assert_eq!(rhs, vec![20.0; 8]);

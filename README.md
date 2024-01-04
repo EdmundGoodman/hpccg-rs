@@ -23,3 +23,7 @@ The top-level directories in the repository are different translated versions of
   - Unit testing for TDD
   - Equivalence checking methodology
 - Check it iter is actually 0 cost abstraction by annotated code analysis (find the mov!)
+
+
+
+converting pointer arithmetic to array indexing - does this incur a performance cost?
