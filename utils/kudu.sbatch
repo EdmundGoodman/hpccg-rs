@@ -15,7 +15,5 @@
 source /etc/profile.d/modules.sh
 
 ## Execute your program(s) ##
-time ../target/release/hpccg-rs
+time ./joboutputs/target/release/hpccg-rs
 
-#perf record -g ../target/release/hpccg-rs
-#mv perf.data joboutputs/perf_%j.data
