@@ -9,9 +9,7 @@
 /// * `local_ncol` - A variable only used in MPI mode (set to `local_nrow` in serial mode)
 /// * `local_nnz` - The local number of non-zero values, approximated as `local_nrow*27`
 /// * `nnz_in_row` - A vector containing the number of non-zeroes in each row
-/// * `ptr_to_vals_in_row` - A vector of pointers to values
-/// * `ptr_to_inds_in_row` - A vector of pointers to indices
-/// * `ptr_to_diags` -  A vector of pointers to diagonals
+/// * `row_start_inds` - A vector of pointers to values
 /// * `list_of_vals` - A vector of values stored in the matrix
 /// * `list_of_inds` - A vector of indices into the matrix
 #[derive(Debug)]
@@ -25,9 +23,7 @@ pub struct SparseMatrix {
     pub local_ncol: usize,
     pub local_nnz: usize,
     pub nnz_in_row: Vec<usize>,
-    pub ptr_to_vals_in_row: Vec<usize>, // can just become usizes? (could post-process into pointers <&'a f64>)
-    pub ptr_to_inds_in_row: Vec<usize>,
-    pub ptr_to_diags: Vec<usize>,
+    pub row_start_inds: Vec<usize>,
     pub list_of_vals: Vec<f64>,
     pub list_of_inds: Vec<usize>,
 }
@@ -66,10 +62,8 @@ impl SparseMatrix {
 
         // The number of non-zero numbers in each row
         let mut nnz_in_row = Vec::with_capacity(local_nrow);
-        // Arrays of reference-counted pointers
-        let mut ptr_to_vals_in_row: Vec<usize> = Vec::with_capacity(local_nrow);
-        let mut ptr_to_inds_in_row: Vec<usize> = Vec::with_capacity(local_nrow);
-        let mut ptr_to_diags: Vec<usize> = Vec::with_capacity(local_nrow);
+        // The index of the start of each row into `list_of_vals` and `list_of_inds`
+        let mut row_start_inds: Vec<usize> = Vec::with_capacity(local_nrow);
 
         // Output data other than the sparse matrix
         let mut guess: Vec<f64> = Vec::with_capacity(local_nrow);
@@ -81,15 +75,12 @@ impl SparseMatrix {
         let mut list_of_inds: Vec<usize> = Vec::with_capacity(local_nnz);
 
         let mut curvalind: usize = 0;
-        let mut curindind: usize = 0;
-
         for iz in 0..nz {
             for iy in 0..ny {
                 for ix in 0..nx {
                     let currow = start_row + iz * nx * ny + iy * nx + ix;
                     let mut nnzrow: usize = 0;
-                    ptr_to_vals_in_row.push(curvalind);
-                    ptr_to_inds_in_row.push(curindind);
+                    row_start_inds.push(curvalind);
                     for sz in -1..=1 {
                         for sy in -1..=1 {
                             for sx in -1..=1 {
@@ -114,14 +105,12 @@ impl SparseMatrix {
                                         // This logic will skip over point that are not part of
                                         // a 7-pt stencil
                                         if (curcol as usize) == currow {
-                                            ptr_to_diags.push(curvalind);
                                             list_of_vals.push(27.0);
                                         } else {
                                             list_of_vals.push(-1.0);
                                         }
                                         curvalind += 1;
                                         list_of_inds.push(curcol as usize);
-                                        curindind += 1;
                                         nnzrow += 1;
                                     }
                                 }
@@ -145,9 +134,7 @@ impl SparseMatrix {
             local_ncol,
             local_nnz,
             nnz_in_row,
-            ptr_to_vals_in_row,
-            ptr_to_inds_in_row,
-            ptr_to_diags,
+            row_start_inds,
             list_of_vals,
             list_of_inds,
         };
@@ -162,29 +149,21 @@ fn test_sparse_matrix() {
     assert_eq!(matrix.local_nnz, 216);
     assert_eq!(matrix.nnz_in_row, vec![8; 8]);
 
-    println!("{:?}", matrix.list_of_vals);
-
     let vals_in_row: Vec<f64> = matrix
-        .ptr_to_vals_in_row
-        .into_iter()
-        .map(|x| matrix.list_of_vals[x])
+        .row_start_inds
+        .iter()
+        .map(|&x| matrix.list_of_vals[x])
         .collect();
     let inds_in_row: Vec<usize> = matrix
-        .ptr_to_inds_in_row
-        .into_iter()
-        .map(|x| matrix.list_of_inds[x])
-        .collect();
-    let diags: Vec<f64> = matrix
-        .ptr_to_diags
-        .into_iter()
-        .map(|x| matrix.list_of_vals[x])
+        .row_start_inds
+        .iter()
+        .map(|&x| matrix.list_of_inds[x])
         .collect();
     assert_eq!(
         vals_in_row,
         vec![27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]
     );
     assert_eq!(inds_in_row, vec![0; 8]);
-    assert_eq!(diags, vec![27.0; 8]);
 
     let expected_vals = vec![
         27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0,
