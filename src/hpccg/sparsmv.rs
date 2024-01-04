@@ -7,42 +7,26 @@ use super::SparseMatrix;
 /// * `vector` - The input vector to multiply the sparse matrix by.
 pub fn sparsemv(matrix: &SparseMatrix, vector: &Vec<f64>) -> Vec<f64> {
     let nrow = matrix.local_nrow as usize;
+
+    let mut y = Vec::with_capacity(vector.len());
     let mut start_index = 0;
+    for i in 0..nrow {
+        let mut sum = 0.0;
+        // cur_vals is a vector slice with ptr_to_vals_in_row of length cur_nnz,
+        // representing the values in the row
+        // let cur_vals = matrix.ptr_to_vals_in_row[i];
+        // let cur_inds = matrix.ptr_to_vals_in_row[i];
+        let cur_nnz = matrix.nnz_in_row[i] as usize;
 
-    matrix.nnz_in_row
-        .iter()
-        .map(|cur_nnz| *cur_nnz as usize)
-        .map(
-            |cur_nnz| {
-                let item = (matrix.list_of_vals[start_index..start_index + cur_nnz]).iter()
-                    .zip(matrix.list_of_inds[start_index..start_index + cur_nnz].iter())
-                    .map(
-                        |(val, ind)|
-                            (*val.borrow()) * vector[(*ind.borrow()) as usize]
-                    ).sum();
-                start_index += cur_nnz;
-                item
-            }
-        ).collect()
-
-    // let mut y = Vec::with_capacity(vector.len());
-    // for i in 0..nrow {
-    //     let mut sum = 0.0;
-    //     // cur_vals is a vector slice with ptr_to_vals_in_row of length cur_nnz,
-    //     // representing the values in the row
-    //     // let cur_vals = matrix.ptr_to_vals_in_row[i];
-    //     // let cur_inds = matrix.ptr_to_vals_in_row[i];
-    //     let cur_nnz = matrix.nnz_in_row[i] as usize;
-    //
-    //     for j in 0..cur_nnz {
-    //         let val = *matrix.list_of_vals[start_index+j].borrow();
-    //         let ind = *matrix.list_of_inds[start_index+j].borrow() as usize;
-    //         sum += val * vector[ind];
-    //     }
-    //     y.push(sum); // y[i] = sum;
-    //     start_index += cur_nnz;
-    // }
-    // y
+        for j in 0..cur_nnz {
+            let val = *matrix.list_of_vals[start_index+j].borrow();
+            let ind = *matrix.list_of_inds[start_index+j].borrow() as usize;
+            sum += val * vector[ind];
+        }
+        y.push(sum); // y[i] = sum;
+        start_index += cur_nnz;
+    }
+    y
 }
 
 
