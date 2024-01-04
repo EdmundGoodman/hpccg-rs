@@ -8,13 +8,13 @@ pub mod hpccg;
 /// Finally, it print the result of the solver, and information about
 /// the performance of the computation.
 fn main() {
-    // let args: Vec<String> = std::env::args().collect();
-    // let (nx, ny, nz) = (
-    //     args[1].parse::<usize>().expect("Failed to parse number!"),
-    //     args[2].parse::<usize>().expect("Failed to parse number!"),
-    //     args[3].parse::<usize>().expect("Failed to parse number!"),
-    // );
-    let (nx, ny, nz) = (125, 125, 125);
+    let args: Vec<String> = std::env::args().collect();
+    let (nx, ny, nz) = (
+        args[1].parse::<usize>().expect("Failed to parse number!"),
+        args[2].parse::<usize>().expect("Failed to parse number!"),
+        args[3].parse::<usize>().expect("Failed to parse number!"),
+    );
+    // let (nx, ny, nz) = (125, 125, 125);
 
     let (matrix, guess, rhs, exact) = hpccg::SparseMatrix::generate_matrix(nx, ny, nz);
     let max_iter = 150;
@@ -29,7 +29,7 @@ fn main() {
     let total_flops = ddot_flops + waxpby_flops + sparsemv_flops;
     let residual = hpccg::compute_residual(matrix.local_nrow, &result, &exact);
 
-    println!("Mini-Application Name: hpccg");
+    println!("Mini-Application Name: hpccg-iterators");
     println!("Mini-Application Version: 1.0");
     println!("Parallelism:\n  MPI not enabled:\n  OpenMP not enabled:");
     println!("Dimensions:\n  nx: {nx}\n  ny: {ny}\n  nz: {nz}");

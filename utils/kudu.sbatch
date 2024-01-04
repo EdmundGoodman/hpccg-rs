@@ -15,5 +15,5 @@
 source /etc/profile.d/modules.sh
 
 ## Execute your program(s) ##
-time ./joboutputs/target/release/hpccg-rs
+time ./joboutputs/target/release/hpccg-rs*
 
