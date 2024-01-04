@@ -1,5 +1,5 @@
 pub mod sparse_matrix;
-pub mod computer_residual;
+pub mod compute_residual;
 mod ddot;
 mod waxpby;
 mod mytimer;
@@ -7,6 +7,7 @@ mod sparsmv;
 
 
 pub use sparse_matrix::SparseMatrix;
+pub use compute_residual::compute_residual;
 use mytimer::mytimer;
 use ddot::ddot;
 use waxpby::waxpby;
@@ -159,8 +160,10 @@ fn test_solver() {
     let (result, iterations, normr, _) = solver(
         &matrix, &rhs, &guess, max_iter, tolerance,
     );
+    let residual = compute_residual(matrix.local_nrow as usize, &result, &exact);
     assert!(normr < tolerance);
     assert!(iterations < max_iter);
+    assert!(residual < 1e-15);
     for (actual, expected) in result.iter().zip(exact) {
         assert!((expected-actual).abs() < 1e-5);
     }
