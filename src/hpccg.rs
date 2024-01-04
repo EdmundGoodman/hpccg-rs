@@ -65,6 +65,7 @@ pub fn solver(
 
     let mut result = x.clone();
     let mut iteration = 0;
+    // TODO: Work out what these variable names mean
     let mut normr = 0.0;
     let mut rtrans: f64 = 0.0;
     let mut oldrtrans: f64 = 0.0;
@@ -146,4 +147,21 @@ pub fn solver(
         normr,
         vec![mytimer() - t_begin, t_ddot, t_waxpby, t_sparsemv, t_mpi_allreduce]
     )
+}
+
+
+#[test]
+fn test_solver() {
+    let (nx, ny, nz) = (5, 5, 5);
+    let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(nx, ny, nz);
+    let max_iter = 150;
+    let tolerance = 5e-40;
+    let (result, iterations, normr, _) = solver(
+        &matrix, &rhs, &guess, max_iter, tolerance,
+    );
+    assert!(normr < tolerance);
+    assert!(iterations < max_iter);
+    for (actual, expected) in result.iter().zip(exact) {
+        assert!((expected-actual).abs() < 1e-5);
+    }
 }
