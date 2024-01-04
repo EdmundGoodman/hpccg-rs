@@ -6,26 +6,20 @@
 /// * `x` - The first input vector.
 /// * `beta` - The scaling factor for the second vector.
 /// * `y` - The second input vector.
-pub fn waxpby(width: usize, alpha: f64, x: &[f64], beta: f64, y: &[f64]) -> Vec<f64> {
-    let mut result = Vec::with_capacity(width);
-    debug_assert!(x.len() == width && y.len() == width);
+pub fn waxpby(_width: usize, alpha: f64, x: &[f64], beta: f64, y: &[f64]) -> Vec<f64> {
     if alpha == 1.0 {
-        for i in 0..width {
-            result.push(unsafe { x.get_unchecked(i) + beta * y.get_unchecked(i) });
-            // result.push(x[i] + beta * y[i]);
-        }
+        x.iter().zip(y.iter())
+            .map(|(x, y)| x + beta * y)
+            .collect()
     } else if beta == 1.0 {
-        for i in 0..width {
-            result.push(unsafe { alpha * x.get_unchecked(i) + y.get_unchecked(i) });
-            // result.push(alpha * x[i] + y[i]);
-        }
+        x.iter().zip(y.iter())
+            .map(|(x, y)| alpha * x + y)
+            .collect()
     } else {
-        for i in 0..width {
-            result.push(unsafe { alpha * x.get_unchecked(i) + beta * y.get_unchecked(i) });
-            // result.push(alpha * x[i] + beta * y[i]);
-        }
+        x.iter().zip(y.iter())
+            .map(|(x, y)| alpha * x + beta * y)
+            .collect()
     }
-    result
 }
 
 #[test]

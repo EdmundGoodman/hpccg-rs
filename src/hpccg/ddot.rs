@@ -4,25 +4,16 @@
 /// input values point to the same vector.
 ///
 /// # Arguments
-/// * `width` - The width of both input vectors.
+/// * `_width` - The width of both input vectors.
 /// * `lhs` - The first input vector.
 /// * `rhs` - The second input vector.
-pub fn ddot(width: usize, lhs: &[f64], rhs: &[f64]) -> f64 {
-    let mut result: f64 = 0.0;
+pub fn ddot(_width: usize, lhs: &[f64], rhs: &[f64]) -> f64 {
     if std::ptr::eq(lhs, rhs) {
-        debug_assert!(lhs.len() == width);
-        for i in 0..width {
-            // result += lhs[i] * lhs[i];
-            result += unsafe { lhs.get_unchecked(i) * lhs.get_unchecked(i) };
-        }
+        lhs.iter().map(|x| x * x).sum()
     } else {
-        debug_assert!(lhs.len() == width && rhs.len() == width);
-        for i in 0..width {
-            // result += lhs[i] * rhs[i];
-            result += unsafe { lhs.get_unchecked(i) * rhs.get_unchecked(i) };
-        }
+        lhs.iter().zip(rhs.iter())
+            .map(|(x, y)| x * y).sum()
     }
-    result
 }
 
 #[test]

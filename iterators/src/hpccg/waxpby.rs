@@ -1,7 +1,7 @@
 /// A function to compute the sum of two scaled vectors.
 ///
 /// # Arguments
-/// * `_width` - The width of both input vectors.
+/// * `width` - The width of both input vectors.
 /// * `alpha` - The scaling factor for the first vector.
 /// * `x` - The first input vector.
 /// * `beta` - The scaling factor for the second vector.
