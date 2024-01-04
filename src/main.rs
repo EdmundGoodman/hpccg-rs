@@ -15,7 +15,7 @@ fn main() {
     //     args[3].parse::<usize>().expect("Failed to parse number!"),
     // );
     // TODO: Check parse to usize
-    let (nx, ny, nz) = (125, 125, 125);
+    let (nx, ny, nz) = (25, 25, 25);
 
     let (matrix, guess, rhs, exact) = hpccg::SparseMatrix::generate_matrix(nx, ny, nz);
     let max_iter = 150;

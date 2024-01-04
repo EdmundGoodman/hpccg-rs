@@ -5,34 +5,15 @@ use super::SparseMatrix;
 /// # Arguments
 /// * `matrix` - A representation of a sparse matrix.
 /// * `vector` - The input vector to multiply the sparse matrix by.
-pub fn sparsemv(matrix: &SparseMatrix, vector: &Vec<f64>) -> Vec<f64> {
-    let nrow = matrix.local_nrow as usize;
+pub fn sparsemv(matrix: &SparseMatrix, vector: &[f64]) -> Vec<f64> {
+    let nrow = matrix.local_nrow;
 
     let mut result = Vec::with_capacity(vector.len());
-    // let mut start_index = 0;
-    // for i in 0..nrow {
-    //     let mut sum = 0.0;
-    //     // cur_vals is a vector slice with ptr_to_vals_in_row of length cur_nnz,
-    //     // representing the values in the row
-    //     // let cur_vals = matrix.ptr_to_vals_in_row[i];
-    //     // let cur_inds = matrix.ptr_to_vals_in_row[i];
-    //     let cur_nnz = matrix.nnz_in_row[i] as usize;
-    //
-    //     for j in 0..cur_nnz {
-    //         let val = *matrix.list_of_vals[start_index+j].borrow();
-    //         let ind = *matrix.list_of_inds[start_index+j].borrow() as usize;
-    //         sum += val * vector[ind];
-    //     }
-    //     y.push(sum); // y[i] = sum;
-    //     start_index += cur_nnz;
-    // }
     for i in 0..nrow {
         let mut sum = 0.0;
-
         let start_val_ind = matrix.ptr_to_vals_in_row[i];
         let start_ind_ind = matrix.ptr_to_inds_in_row[i];
         let cur_nnz = matrix.nnz_in_row[i];
-
         for j in 0..cur_nnz {
             sum += matrix.list_of_vals[start_val_ind+j] * vector[matrix.list_of_inds[start_ind_ind+j]];
         }

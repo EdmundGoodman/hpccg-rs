@@ -40,10 +40,11 @@ fn tock(t0: &f64, t: &mut f64) {
 /// * `normr` - The residual difference between the current approximate solution and the exact
 ///             solution.
 /// * `times` - An array of times spent for each operation (ddot/waxpby/sparse_mv/total).
+#[allow(non_snake_case, unused_assignments, unused_mut)]
 pub fn solver(
     A: &SparseMatrix,
-    b: &Vec<f64>,
-    x: &Vec<f64>,
+    b: &[f64],
+    x: &[f64],
     max_iterations: i32,
     tolerance: f64
 ) -> (Vec<f64>, i32, f64, Vec<f64>) {
@@ -64,7 +65,7 @@ pub fn solver(
     let mut p: Vec<f64> = Vec::with_capacity(ncol);
     let mut Ap: Vec<f64> = Vec::with_capacity(nrow);
 
-    let mut result = x.clone();
+    let mut result = x.to_owned();
     let mut iteration = 0;
     // TODO: Work out what these variable names mean
     let mut normr = 0.0;
@@ -86,7 +87,7 @@ pub fn solver(
     tock(&t_total, &mut t_waxpby);
 
     tick(&mut t_total);
-    Ap = sparsemv(&A, &p);
+    Ap = sparsemv(A, &p);
     tock(&t_total, &mut t_sparsemv);
 
     tick(&mut t_total);

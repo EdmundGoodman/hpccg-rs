@@ -1,6 +1,3 @@
-use std::rc::Rc;
-use std::cell::RefCell;
-
 /// A data structure representing a sparse matrix mesh
 ///
 /// # Fields
@@ -98,6 +95,7 @@ impl SparseMatrix {
                                 // curcol being valid is sufficient to check the z values
                                 let sx_ix = (ix as i32) + sx;
                                 let sy_iy = (iy as i32) + sy;
+                                #[allow(clippy::collapsible_if)]
                                 if (sx_ix>=0) && (sx_ix<(nx as i32)) && (sy_iy>=0) && (sy_iy<(ny as i32)) && (curcol>=0 && curcol<(local_nrow as i32)) {
                                     if !use_7pt_stencil || (sz*sz+sy*sy+sx*sx<=1) {
                                         // This logic will skip over point that are not part of

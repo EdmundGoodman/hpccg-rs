@@ -7,7 +7,7 @@
 /// * `width` - The width of both input vectors.
 /// * `actual` - The vector of actual values.
 /// * `expected` - The vector of expected values.
-pub fn compute_residual(width: usize, actual: &Vec<f64>, expected: &Vec<f64>) -> f64 {
+pub fn compute_residual(width: usize, actual: &[f64], expected: &[f64]) -> f64 {
     let mut residual: f64 = 0.0;
     for i in 0..width {
         let diff = (actual[i] - expected[i]).abs();

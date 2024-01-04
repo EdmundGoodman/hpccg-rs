@@ -6,7 +6,7 @@
 /// * `x` - The first input vector.
 /// * `beta` - The scaling factor for the second vector.
 /// * `y` - The second input vector.
-pub fn waxpby(width: usize, alpha: f64, x: &Vec<f64>, beta: f64, y: &Vec<f64>) -> Vec<f64> {
+pub fn waxpby(width: usize, alpha: f64, x: &[f64], beta: f64, y: &[f64]) -> Vec<f64> {
     let mut result = Vec::with_capacity(width);
     if alpha == 1.0 {
         for i in 0..width {

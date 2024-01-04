@@ -9,6 +9,7 @@ pub fn mytimer() -> f64 {
 }
 
 /// A function to get the wall clock time in seconds since the UNIX epoch.
+#[allow(dead_code)]
 pub fn wall_mytimer() -> f64 {
     let tp = SystemTime::now()
         .duration_since(UNIX_EPOCH).unwrap();
@@ -18,6 +19,7 @@ pub fn wall_mytimer() -> f64 {
 }
 
 /// A function to get the system clock time in seconds.
+#[allow(dead_code)]
 pub fn sysconf_mytimer() -> f64 {
     unsafe {
         let mut ts: MaybeUninit<libc::tms> = MaybeUninit::uninit();
@@ -27,7 +29,7 @@ pub fn sysconf_mytimer() -> f64 {
     }
 }
 
-/// A function to get the CPU time (user and system) in seconds.
+/// A function to get the CPU time (user and system) in seconds.v
 pub fn getrusage_mytimer() -> f64 {
     unsafe {
         let mut ruse: MaybeUninit<libc::rusage> = MaybeUninit::uninit();
