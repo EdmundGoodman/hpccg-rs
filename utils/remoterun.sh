@@ -3,7 +3,9 @@
 set -e
 
 # Compile the case to run
+cd ..
 cargo build --release
+cd utils
 
 # Submit the batch to Kudu, and record its batch number
 BATCH=$( sbatch kudu.sbatch )
