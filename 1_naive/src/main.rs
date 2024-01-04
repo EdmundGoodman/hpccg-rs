@@ -9,12 +9,14 @@ pub mod hpccg;
 /// the performance of the computation.
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let (nx, ny, nz) = (
-        args[1].parse::<i32>().expect("Failed to parse number!"),
-        args[2].parse::<i32>().expect("Failed to parse number!"),
-        args[3].parse::<i32>().expect("Failed to parse number!"),
-    );
-    // let (nx, ny, nz) = (125, 125, 125);
+    let (nx, ny, nz) = match &args.to_owned()[..] {
+        [_, x, y, z] => (
+            x.parse::<usize>().expect("Failed to parse number!"),
+            y.parse::<usize>().expect("Failed to parse number!"),
+            z.parse::<usize>().expect("Failed to parse number!"),
+        ),
+        _ =>(25, 25, 25),
+    };
 
     let (matrix, guess, rhs, exact) = hpccg::SparseMatrix::generate_matrix(nx, ny, nz);
     let max_iter = 150;
