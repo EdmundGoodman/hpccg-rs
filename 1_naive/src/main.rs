@@ -11,9 +11,9 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let (nx, ny, nz) = match &args.to_owned()[..] {
         [_, x, y, z] => (
-            x.parse::<usize>().expect("Failed to parse number!"),
-            y.parse::<usize>().expect("Failed to parse number!"),
-            z.parse::<usize>().expect("Failed to parse number!"),
+            x.parse::<i32>().expect("Failed to parse number!"),
+            y.parse::<i32>().expect("Failed to parse number!"),
+            z.parse::<i32>().expect("Failed to parse number!"),
         ),
         _ =>(25, 25, 25),
     };
