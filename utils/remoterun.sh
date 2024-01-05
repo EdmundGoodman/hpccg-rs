@@ -6,6 +6,7 @@ set -e
 mkdir -p joboutputs
 rm -f joboutputs/most_recent.out joboutputs/most_recent.err
 CARGO_TARGET_DIR=./joboutputs/target cargo build --manifest-path=${1:-../Cargo.toml} --release
+export BINARY_PATH="joboutputs/target/release/${2:-hpccg-rs}"
 
 # Submit the batch to Kudu, and record its batch number
 BATCH=$( sbatch kudu.sbatch )
