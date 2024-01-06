@@ -1,10 +1,10 @@
 fn main() -> miette::Result<()> {
-    let path = std::path::PathBuf::from("src");
+    let path = std::path::PathBuf::from("hpccg_src");
     let mut b = autocxx_build::Builder::new("src/main.rs", [&path]).build()?;
-    b.file("src/ddot.cpp").flag_if_supported("-std=c++14").compile("autocxx-demo");
+    b.file("hpccg_src/ddot.cpp").flag_if_supported("-std=c++14").compile("autocxx-demo");
 
     println!("cargo:rerun-if-changed=src/main.rs");
-    println!("cargo:rerun-if-changed=src/ddot.cpp");
-    println!("cargo:rerun-if-changed=src/ddot.hpp");
+    println!("cargo:rerun-if-changed=hpccg_src/ddot.cpp");
+    println!("cargo:rerun-if-changed=hpccg_src/ddot.hpp");
     Ok(())
 }
