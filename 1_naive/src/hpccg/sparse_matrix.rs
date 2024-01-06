@@ -52,7 +52,7 @@ impl SparseMatrix {
         nx: i32,
         ny: i32,
         nz: i32,
-    ) -> (SparseMatrix, Vec<f64>, Vec<f64>, Vec<f64>) {
+    ) -> (Self, Vec<f64>, Vec<f64>, Vec<f64>) {
         let use_7pt_stencil = false;
 
         // The size of our sub-block (must be non-zero)
