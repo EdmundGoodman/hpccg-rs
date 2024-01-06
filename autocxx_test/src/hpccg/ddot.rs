@@ -1,6 +1,8 @@
 use autocxx::prelude::*;
 use autocxx::c_int;
 
+const TEST_RUST: bool = true;
+
 include_cpp! {
     #include "ddot.hpp"
     safety!(unsafe_ffi)
@@ -37,29 +39,37 @@ fn test_ddot() {
     let lhs = vec![1.0, 2.0, 3.0];
     let rhs = vec![3.0, 2.0, 1.0];
 
-    let rust_result = ddot(width, &lhs, &rhs);
-    let mut cpp_result = 0.0;
-    unsafe {
-        ffi::ddot(
-            c_int(width as i32),
-            lhs.clone().as_mut_ptr(),
-            rhs.clone().as_mut_ptr(),
-            &mut cpp_result
-        );
-    }
-    assert_eq!(rust_result, 10.0);
-    assert_eq!(rust_result, cpp_result);
 
-    let rust_result = ddot(width, &lhs, &lhs);
-    let mut cpp_result = 0.0;
-    unsafe {
-        ffi::ddot(
-            c_int(width as i32),
-            lhs.clone().as_mut_ptr(),
-            lhs.clone().as_mut_ptr(),
-            &mut cpp_result
-        );
-    }
-    assert_eq!(rust_result, 14.0);
-    assert_eq!(rust_result, cpp_result);
+    let result = if TEST_RUST {
+        ddot(width, &lhs, &rhs)
+    } else {
+        let mut result = 0.0;
+        unsafe {
+            ffi::ddot(
+                c_int(width as i32),
+                lhs.clone().as_mut_ptr(),
+                rhs.clone().as_mut_ptr(),
+                &mut result
+            );
+        }
+        result
+    };
+    assert_eq!(result, 10.0);
+
+
+    let result = if TEST_RUST {
+        ddot(width, &lhs, &lhs)
+    } else {
+        let mut result = 0.0;
+        unsafe {
+            ffi::ddot(
+                c_int(width as i32),
+                lhs.clone().as_mut_ptr(),
+                lhs.clone().as_mut_ptr(),
+                &mut result
+            );
+        }
+        result
+    };
+    assert_eq!(result, 14.0);
 }
