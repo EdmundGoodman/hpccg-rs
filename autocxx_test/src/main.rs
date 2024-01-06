@@ -17,3 +17,16 @@ fn main() {
     }
     println!("{:?} dot product {:?} = {}", x, y, result);
 }
+
+#[test]
+fn test_ddot() {
+    let n = c_int(3);
+    let mut x = vec![ 1.0, 2.0, 3.0 ];
+    let mut y = vec![ 3.0, 2.0, 1.0 ];
+    let mut result = 0.0;
+    let expected = 10.0;
+    unsafe {
+        ffi::ddot(n, x.as_mut_ptr(), y.as_mut_ptr(), &mut result);
+    }
+    assert_eq!(result, expected);
+}
