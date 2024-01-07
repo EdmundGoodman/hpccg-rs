@@ -24,6 +24,6 @@ The top-level directories in the repository are different translated versions of
   - Equivalence checking methodology
 - Check it iter is actually 0 cost abstraction by annotated code analysis (find the mov!)
 - correctness by comparing perf characteristics
-
+- macros for switching between rust and c++ unit test mode
 
 converting pointer arithmetic to array indexing - does this incur a performance cost?
