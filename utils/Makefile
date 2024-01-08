@@ -21,7 +21,7 @@ check: .venv/
 ### Execution ###
 .PHONY: remote_run_all
 run: .venv/
-	@poetry run python3 src/remote_run_all.py
+	@poetry run python3 src/remote_run_all/main.py
 
 ### Cleanup ###
 .PHONY: clean_cache
