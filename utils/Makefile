@@ -1,38 +1,42 @@
+### Variables ###
+# https://clarkgrubb.com/makefile-style-guide
 MAKEFLAGS += --warn-undefined-variables
 SHELL := bash
-.DEFAULT_GOAL := default
+.DEFAULT_GOAL := install
+
+
+### Installation ###
+.PHONY: install
+install:
+	poetry install
+
+### Static analysis ###
+.PHONY: check
+check: .venv/
+	poetry run black src
+	poetry run isort src
+	poetry run ruff check src
+	poetry run mypy src
+
+### Execution ###
+.PHONY: remote_run_all
+run: .venv/
+	@poetry run python3 src/remote_run_all.py
+
+### Cleanup ###
+.PHONY: clean_cache
+clean_cache:
+	rm -rf .mypy_cache/ .ruff_cache/
+
+.PHONY: clean_pycache
+clean_pycache:
+	find . -not -path "./.venv/*" | \
+		grep -E "(/__pycache__$$|\.pyc$$|\.pyo$$)" | \
+		xargs rm -rf
 
 .PHONY: clean
-clean:
-	rm -rf joboutputs
+clean: clean_cache clean_pycache
 
-.PHONY: default
-default:
-	./remoterun.sh
-
-.PHONY: 1_naive
-1_naive:
-	./remoterun.sh ../1_naive/Cargo.toml hpccg-rs-naive
-
-.PHONY: 2_indexed
-2_indexed:
-	./remoterun.sh ../2_indexed/Cargo.toml hpccg-rs-indexed
-
-.PHONY: 3_single_indexed
-3_single_indexed:
-	./remoterun.sh ../3_single_indexed/Cargo.toml hpccg-rs-single-indexed
-
-.PHONY: 4_no_bounds_check
-4_no_bounds_check:
-	./remoterun.sh ../4_no_bounds_check/Cargo.toml hpccg-rs-no-bounds-check
-
-.PHONY: 5_iterators
-5_iterators:
-	./remoterun.sh ../5_iterators/Cargo.toml hpccg-rs-iterators
-
-.PHONY: 6_parallel
-6_parallel:
-	./remoterun.sh ../6_parallel/Cargo.toml hpccg-rs-parallel
-
-.PHONY: all
-all: 1_naive 2_indexed 3_single_indexed 4_no_bounds_check 5_iterators 6_parallel
+.PHONY: clobber
+clobber: clean
+	rm -rf .venv/
