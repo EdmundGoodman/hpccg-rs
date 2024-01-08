@@ -2,7 +2,7 @@
 <module type="CPP_MODULE" version="4">
   <component name="FacetManager">
     <facet type="Python" name="Python facet">
-      <configuration sdkName="Python 3.11" />
+      <configuration sdkName="Poetry (hpccg-rs)" />
     </facet>
   </component>
   <component name="NewModuleRootManager">
@@ -12,7 +12,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Python 3.11 interpreter library" level="application" />
+    <orderEntry type="library" name="Poetry (hpccg-rs) interpreter library" level="application" />
   </component>
   <component name="SonarLintModuleSettings">
     <option name="uniqueId" value="d13cd0f7-0a69-4df2-b869-ab790bd046be" />
