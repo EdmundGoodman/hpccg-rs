@@ -18,8 +18,8 @@ echo "#!/bin/sh
 #SBATCH --time=10:00
 #SBATCH --mem=60000
 #SBATCH --exclusive=mcs
-#SBATCH --output=%j/cs257_output_%j.out
-#SBATCH --error=%j/cs257_error_%j.err
+#SBATCH --output=%j/dissertation_output_%j.out
+#SBATCH --error=%j/dissertation_error_%j.err
 echo ===== ENVIRONMENT =====
 . /etc/profile.d/modules.sh
 lscpu
