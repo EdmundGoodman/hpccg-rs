@@ -24,6 +24,9 @@ echo ===== ENVIRONMENT =====
 . /etc/profile.d/modules.sh
 lscpu
 
+echo
+echo
+
 $@
 " > tmp
 
