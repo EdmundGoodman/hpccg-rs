@@ -1,27 +1,41 @@
 #!/bin/sh
 
-set -e
+# This script requires at lease a singular parameter, an executable. which
+# should be the first parameter. Any further parameters should be the ones
+# required by the executable itself, as these will get passed to the program
+# when ran by the compute node.
 
-# Set up for the batch job
-mkdir -p joboutputs
-rm -f joboutputs/most_recent.out joboutputs/most_recent.err
-CARGO_TARGET_DIR=./joboutputs/target cargo build --manifest-path=${1:-../Cargo.toml} --release
-export BINARY_PATH="joboutputs/target/release/${2:-hpccg-rs}"
+if [ $# -lt 1 ]; then
+	echo "Please provide a command to run on the batch computer system"
+	exit 1
+fi
 
-# Submit the batch to Kudu, and record its batch number
-BATCH=$( sbatch kudu.sbatch )
+echo "#!/bin/sh
+
+#SBATCH --job-name=multicore-cpu
+#SBATCH --partition=cpu-batch
+#SBATCH --cpus-per-task=40
+#SBATCH --time=10:00
+#SBATCH --mem=60000
+#SBATCH --exclusive=mcs
+#SBATCH --output=%j/cs257_output_%j.out
+#SBATCH --error=%j/cs257_error_%j.err
+echo ===== ENVIRONMENT =====
+. /etc/profile.d/modules.sh
+lscpu
+
+$@
+" > tmp
+
+BATCH=$( sbatch tmp )
 BATCHNO=$( echo $BATCH | sed 's/[^0-9]//g' )
+
+rm tmp
+
+mkdir $BATCHNO
+
 echo "===== Job $BATCHNO has been submitted! ====="
 
-# Show the job position in the queue
 echo "===== My jobs ====="
 echo "Note: Don't worry if the job is PENDING, the job will be ran as soon as possible."
 squeue -u $( whoami ) -o "%.8i %.20j %.10T %.5M %.20R %.20e"
-
-# Soft-link to the most recent run for convenience
-ln -s hpccg-rs_$BATCHNO.out ./joboutputs/most_recent.out
-ln -s hpccg-rs_$BATCHNO.err ./joboutputs/most_recent.err
-
-# Show the estimate to to complete
-#ENDTIME=$( squeue -o "%i %e" | grep $BATCHNO | cut -d " " -f 2 )
-#echo "===== Job $BATCHNO has been submitted, should be finished by $ENDTIME ====="

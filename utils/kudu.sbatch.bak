@@ -15,5 +15,5 @@
 source /etc/profile.d/modules.sh
 
 ## Execute your program(s) ##
-time ./$BINARY_PATH
+time ./$BINARY_PATH $BINARY_ARGS
 
