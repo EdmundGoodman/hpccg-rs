@@ -6,12 +6,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from re import search as re_search
 from typing import Optional
+# from functools import reduce
 
 import matplotlib.pyplot as plt
-import pandas as pd
 import seaborn as sns
 
-plt.style.use('seaborn')
+# plt.style.use('seaborn')
 plt.rcParams['figure.figsize'] = [16, 9]
 plt.rcParams['figure.dpi'] = 200
 
@@ -82,8 +82,6 @@ class RunResult:
 
 def get_run_results() -> Iterator[RunResult | None]:
     """Get an iterator of dataclasses representing each of the valid runs."""
-    # Walk the results directory tree
-    # For each file, pattern match to characterise it and get its data
     for run_directory in RESULTS_DIRECTORY.iterdir():
         for results_file in run_directory.iterdir():
             if results_file.suffix == ".out":
@@ -92,19 +90,24 @@ def get_run_results() -> Iterator[RunResult | None]:
 
 def main() -> None:
     """Analyse the specified remote runs."""
-    data_series: dict[str, list[float]] = {"Dimension": []}
+    data_series: dict[str, list[tuple[int,float]]] = {}
     for run_result in get_run_results():
-        if run_result is None:
+        # size = reduce(lambda x, y: x * y, run_result.dimensions)
+        size = run_result.dimensions[0]
+        # Ignore some with missing data...
+        if run_result is None or run_result.dimensions[0] >= 350 or "parallel" in run_result.name:
             continue
-        print(f"{run_result}\n")
         if run_result.name not in data_series:
             data_series[run_result.name] = []
-        data_series[run_result.name].append(run_result.times[0])
-        data_series["Dimension"]
+        data_series[run_result.name].append((size, run_result.times[0]))
 
-    sns.lineplot(x="Dimension []", y="Time [s]", hue="variable",
-                data=pd.melt(pd.DataFrame(data_series), ["Dimension"]))
-    print(data_series)
+    for name, data in data_series.items():
+        size, time = list(zip(*sorted(data, key=lambda a: a[0])))
+        sns.lineplot(x=size, y=time, label=name.replace("-", "_"))
+    plt.xlabel("Size []")
+    plt.ylabel("Time [s]")
+    plt.legend()
+    plt.show()
 
 
 if __name__ == "__main__":
