@@ -7,6 +7,14 @@ from pathlib import Path
 from re import search as re_search
 from typing import Optional
 
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+
+plt.style.use('seaborn')
+plt.rcParams['figure.figsize'] = [16, 9]
+plt.rcParams['figure.dpi'] = 200
+
 RESULTS_DIRECTORY: Path = Path("src/analyse_remote_runs/all_runs")
 
 NAME_REGEX = r"Mini-Application Name: ([a-zA-Z0-9_\-]*)"
@@ -84,8 +92,19 @@ def get_run_results() -> Iterator[RunResult | None]:
 
 def main() -> None:
     """Analyse the specified remote runs."""
+    data_series: dict[str, list[float]] = {"Dimension": []}
     for run_result in get_run_results():
+        if run_result is None:
+            continue
         print(f"{run_result}\n")
+        if run_result.name not in data_series:
+            data_series[run_result.name] = []
+        data_series[run_result.name].append(run_result.times[0])
+        data_series["Dimension"]
+
+    sns.lineplot(x="Dimension []", y="Time [s]", hue="variable",
+                data=pd.melt(pd.DataFrame(data_series), ["Dimension"]))
+    print(data_series)
 
 
 if __name__ == "__main__":
