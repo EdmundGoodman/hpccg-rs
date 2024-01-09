@@ -14,13 +14,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Poetry (hpccg-rs) interpreter library" level="application" />
   </component>
-  <component name="PyNamespacePackagesService">
-    <option name="namespacePackageFolders">
-      <list>
-        <option value="$MODULE_DIR$/utils" />
-      </list>
-    </option>
-  </component>
   <component name="SonarLintModuleSettings">
     <option name="uniqueId" value="d13cd0f7-0a69-4df2-b869-ab790bd046be" />
   </component>
