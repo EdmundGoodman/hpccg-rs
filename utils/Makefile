@@ -20,8 +20,12 @@ check: .venv/
 
 ### Execution ###
 .PHONY: remote_run_all
-run: .venv/
+remote_run_all: .venv/
 	@poetry run python3 src/remote_run_all/main.py
+
+.PHONY: analyse_remote_runs
+analyse_remote_runs: .venv/
+	@poetry run python3 src/analyse_remote_runs/main.py
 
 ### Cleanup ###
 .PHONY: clean_cache

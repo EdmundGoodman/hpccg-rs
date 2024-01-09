@@ -56,7 +56,7 @@ def main() -> None:
     for i, args in enumerate(RUN_ARGS):
         print(f"{i+1}) Running with arguments: {args}")
         for j, (directory, build, executable) in enumerate(RUN_COMMANDS):
-            command: str = f"cd {directory} && {build} && time {executable} {args}"
+            command: str = f"cd {directory} && {build} && time ./{executable} {args}"
             print(f"\t{j+1}) `{command}`")
             subprocess_run(["./remoterun.sh", command])  # noqa: S603
             print("")
