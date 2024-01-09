@@ -11,9 +11,9 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# plt.style.use('seaborn')
-plt.rcParams['figure.figsize'] = [16, 9]
-plt.rcParams['figure.dpi'] = 200
+plt.style.use("seaborn-v0_8")
+#plt.rcParams["figure.figsize"] = [16, 9]
+#plt.rcParams["figure.dpi"] = 200
 
 RESULTS_DIRECTORY: Path = Path("src/analyse_remote_runs/all_runs")
 
