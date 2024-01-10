@@ -21,7 +21,6 @@ echo "#!/bin/sh
 #SBATCH --output=%j/dissertation_output_%j.out
 #SBATCH --error=%j/dissertation_error_%j.err
 echo ===== ENVIRONMENT =====
-. /etc/profile.d/modules.sh
 lscpu
 
 echo
