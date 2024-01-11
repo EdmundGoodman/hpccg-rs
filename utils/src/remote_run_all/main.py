@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """A script to run a test matrix of hpccg translations on Kudu batch computer."""
-import subprocess
+from subprocess import run as subprocess_run
 from pathlib import Path
 from textwrap import dedent
 from dataclasses import dataclass
@@ -100,22 +100,12 @@ class TestConfiguration:
 
     def run(self) -> None:
         """Run the specified test on batch compute."""
-        with NamedTemporaryFile(prefix="benchmark_", suffix=".sbatch", dir=Path.cwd(), mode="w+") as sbatch_tmp:
+        with NamedTemporaryFile(suffix=".sbatch", dir=Path.cwd(), mode="w+") as sbatch_tmp:
             sbatch_tmp.write(self.generate_sbatch_file())
             sbatch_tmp.flush()
-            batch_no = None
-            try:
-                batch_no = subprocess.check_output(["sbatch", Path(sbatch_tmp.name)])  # noqa: S603
-            except subprocess.CalledProcessError as e:
-                print(e.output)
-                exit()
-            print(f"===== Job {batch_no} has been submitted! =====")
-            output_directory = Path(f"./{batch_no}/")
-            output_directory.mkdir()
-            print(f"===== Current job queue: =====")
-            user = subprocess.check_output(["whoami"])
-            subprocess.run(["squeue", "-u", user, "-o", "%.8i %.20j %.10T %.5M %.20R %.20e"])  # noqa: S603
-        exit()
+            subprocess_run(["./remoterun.sh", Path(sbatch_tmp.name)])
+            # subprocess_run(["echo", Path(sbatch_tmp.name)])
+
 
 def get_test_suite() -> Iterator[TestConfiguration]:
     """Yield an iterator over the test suite."""
