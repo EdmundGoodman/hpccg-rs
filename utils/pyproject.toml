@@ -15,7 +15,6 @@ build-backend = "poetry.core.masonry.api"
 python = "^3.10"
 seaborn = "^0.13.1"
 pandas = "^2.1.4"
-tqdm = "^4.66.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.7.0"

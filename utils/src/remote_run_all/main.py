@@ -6,9 +6,7 @@ from textwrap import dedent
 from dataclasses import dataclass
 from tempfile import NamedTemporaryFile
 from collections.abc import Iterator
-from tqdm import tqdm
-
-PWD = Path(__file__).parent
+from contextlib import chdir
 
 # Data schema: (directory, build_command, run_command)
 RUST_BUILD_COMMAND = "cargo build --release"
@@ -82,7 +80,8 @@ class TestConfiguration:
 
     def generate_sbatch_file(self) -> str:
         """Create a .sbatch file from the test's configuration."""
-        return dedent(f"""#!/bin/sh
+        return dedent(f"""
+        #!/bin/sh
         #SBATCH --job-name=multicore-cpu
         #SBATCH --partition=cpu-batch
         #SBATCH --cpus-per-task={self.cpu_count}
@@ -98,17 +97,17 @@ class TestConfiguration:
         cd {self.directory}
         {self.build_command}
         time ./{self.run_command} {self.args}
-        """)
+        """[1:])
 
     def run(self) -> None:
         """Run the specified test on batch compute."""
-        print(PWD)
-        with NamedTemporaryFile(suffix=".sbatch", dir=PWD, mode="w+") as sbatch_tmp:
-            sbatch_tmp.write(self.generate_sbatch_file())
-            sbatch_tmp.flush()
-            subprocess_run([PWD / "remoterun.sh", Path(sbatch_tmp.name)])
-            # subprocess_run(["./remoterun.sh", Path(sbatch_tmp.name)])
-            # subprocess_run(["echo", Path(sbatch_tmp.name)])
+        with chdir(Path(__file__).parent):
+            with NamedTemporaryFile(suffix=".sbatch", dir=Path("./"), mode="w+") as sbatch_tmp:
+                sbatch_tmp.write(self.generate_sbatch_file())
+                sbatch_tmp.flush()
+                # subprocess_run(["pwd"])
+                # subprocess_run(["cat", Path(sbatch_tmp.name)])
+                subprocess_run(["./remoterun.sh", Path(sbatch_tmp.name)])
 
 
 def get_test_suite() -> Iterator[TestConfiguration]:
@@ -123,11 +122,10 @@ def get_test_suite() -> Iterator[TestConfiguration]:
 
 def main() -> None:
     """Run the test matrix."""
-    for test in (progress_bar := tqdm(get_test_suite(), leave=True)):
-        progress_bar.set_description(
-            f"Starting {test.directory.name} @ '{test.args}' ({test.cpu_count} cores, {test.memory_mb/1000}GB RAM)"
-        )
+    for test in get_test_suite():
+        print(f"Starting {test.directory.name} @ '{test.args}' ({test.cpu_count} cores, {test.memory_mb/1000}GB RAM)")
         test.run()
+        print("\n")
 
 
 if __name__ == "__main__":
