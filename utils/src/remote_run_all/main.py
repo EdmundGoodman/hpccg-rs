@@ -8,6 +8,8 @@ from tempfile import NamedTemporaryFile
 from collections.abc import Iterator
 from tqdm import tqdm
 
+PWD = Path(__file__).parent
+
 # Data schema: (directory, build_command, run_command)
 RUST_BUILD_COMMAND = "cargo build --release"
 CPP_BUILD_COMMAND = "make"
@@ -100,10 +102,12 @@ class TestConfiguration:
 
     def run(self) -> None:
         """Run the specified test on batch compute."""
-        with NamedTemporaryFile(suffix=".sbatch", dir=Path.cwd(), mode="w+") as sbatch_tmp:
+        print(PWD)
+        with NamedTemporaryFile(suffix=".sbatch", dir=PWD, mode="w+") as sbatch_tmp:
             sbatch_tmp.write(self.generate_sbatch_file())
             sbatch_tmp.flush()
-            subprocess_run(["./remoterun.sh", Path(sbatch_tmp.name)])
+            subprocess_run([PWD / "remoterun.sh", Path(sbatch_tmp.name)])
+            # subprocess_run(["./remoterun.sh", Path(sbatch_tmp.name)])
             # subprocess_run(["echo", Path(sbatch_tmp.name)])
 
 
