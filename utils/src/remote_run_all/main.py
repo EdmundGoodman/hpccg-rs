@@ -1,8 +1,55 @@
 #!/usr/bin/env python3
 """A script to run a test matrix of hpccg translations on Kudu batch computer."""
-
+import subprocess
 from pathlib import Path
-from subprocess import run as subprocess_run
+from textwrap import dedent
+from dataclasses import dataclass
+from tempfile import NamedTemporaryFile
+from collections.abc import Iterator
+from tqdm import tqdm
+
+# Data schema: (directory, build_command, run_command)
+RUST_BUILD_COMMAND = "cargo build --release"
+CPP_BUILD_COMMAND = "make"
+RUST_EXECUTABLE_PREFIX = Path("./target/release/")
+BUILD_PARENT_DIRECTORY = Path("../")
+RUN_CONFIG: list[tuple[Path, str, Path]] = [
+    (
+        BUILD_PARENT_DIRECTORY / "0_original",
+        CPP_BUILD_COMMAND,
+        Path("./test_HPCCG")
+    ),
+    (
+        BUILD_PARENT_DIRECTORY / "1_naive",
+        RUST_BUILD_COMMAND,
+        RUST_EXECUTABLE_PREFIX / "hpccg-rs-naive",
+    ),
+    (
+        BUILD_PARENT_DIRECTORY / "2_indexed",
+        RUST_BUILD_COMMAND,
+        RUST_EXECUTABLE_PREFIX / "hpccg-rs-indexed",
+    ),
+    (
+        BUILD_PARENT_DIRECTORY / "3_single_indexed",
+        RUST_BUILD_COMMAND,
+        RUST_EXECUTABLE_PREFIX / "hpccg-rs-single-indexed",
+    ),
+    (
+        BUILD_PARENT_DIRECTORY / "4_no_bounds_check",
+        RUST_BUILD_COMMAND,
+        RUST_EXECUTABLE_PREFIX / "hpccg-rs-no-bounds-check",
+    ),
+    (
+        BUILD_PARENT_DIRECTORY / "5_iterators",
+        RUST_BUILD_COMMAND,
+        RUST_EXECUTABLE_PREFIX / "hpccg-rs-iterators",
+    ),
+    (
+        BUILD_PARENT_DIRECTORY / "6_parallel",
+        RUST_BUILD_COMMAND,
+        RUST_EXECUTABLE_PREFIX / "hpccg-rs-parallel",
+    ),
+]
 
 RUN_ARGS: list[str] = [
     "50 50 50",
@@ -15,52 +62,74 @@ RUN_ARGS: list[str] = [
     "400 400 400",
 ]
 
-# Data schema: (directory, build, executable, args)
-RUN_COMMANDS: list[tuple[Path, str, Path]] = [
-    (Path("../0_original"), "make", Path("./test_HPCCG")),
-    (
-        Path("../1_naive"),
-        "cargo build --release",
-        Path("./target/release/hpccg-rs-naive"),
-    ),
-    (
-        Path("../2_indexed"),
-        "cargo build --release",
-        Path("./target/release/hpccg-rs-indexed"),
-    ),
-    (
-        Path("../3_single_indexed"),
-        "cargo build --release",
-        Path("./target/release/hpccg-rs-single-indexed"),
-    ),
-    (
-        Path("../4_no_bounds_check"),
-        "cargo build --release",
-        Path("./target/release/hpccg-rs-no-bounds-check"),
-    ),
-    (
-        Path("../5_iterators"),
-        "cargo build --release",
-        Path("./target/release/hpccg-rs-iterators"),
-    ),
-    (
-        Path("../6_parallel"),
-        "cargo build --release",
-        Path("./target/release/hpccg-rs-parallel"),
-    ),
+BATCH_CONFIG: list[tuple[int, str, int]] = [
+    (40, "10:00", 60_000),
 ]
+
+@dataclass
+class TestConfiguration:
+
+    directory: Path
+    build_command: str
+    run_command: Path
+    args: str
+    cpu_count: int
+    timeout: str
+    memory_mb: int
+    output_prefix: str = "%j/dissertation"
+
+    def generate_sbatch_file(self) -> str:
+        """Create a .sbatch file from the test's configuration."""
+        return dedent(f"""
+        #!/bin/sh
+        #SBATCH --job-name=multicore-cpu
+        #SBATCH --partition=cpu-batch
+        #SBATCH --cpus-per-task={self.cpu_count}
+        #SBATCH --time={self.timeout}
+        #SBATCH --mem={self.memory_mb}
+        #SBATCH --exclusive=mcs
+        #SBATCH --output={self.output_prefix}_output_%j.out
+        #SBATCH --error={self.output_prefix}_error_%j.err
+        echo "===== ENVIRONMENT ====="
+        lscpu
+        echo
+        echo "===== RUN RESULTS ====="
+        cd {self.directory}
+        {self.build_command}
+        time ./{self.run_command} {self.args}
+        """)
+
+    def run(self) -> None:
+        """Run the specified test on batch compute."""
+        with NamedTemporaryFile(prefix="benchmark_", suffix=".sbatch", dir=Path.cwd(), mode="w+") as sbatch_tmp:
+            sbatch_tmp.write(self.generate_sbatch_file())
+            sbatch_tmp.flush()
+            subprocess.run(["cat", Path(sbatch_tmp.name)])  # noqa: S603
+            batch_no = subprocess.check_output(["echo", "batch_no"])  # noqa: S603
+            print(f"===== Job {batch_no} has been submitted! =====")
+            output_directory = Path(f"./{batch_no}/")
+            output_directory.mkdir()
+            print(f"===== Current job queue: =====")
+            subprocess.run(["squeue", "-u", "$( whoami )", "-o", "%.8i %.20j %.10T %.5M %.20R %.20e"])  # noqa: S603
+
+
+def get_test_suite() -> Iterator[TestConfiguration]:
+    """Yield an iterator over the test suite."""
+    for (cpu_count, timeout, memory_mb) in BATCH_CONFIG:
+        for args in RUN_ARGS:
+            for (directory, build, executable) in RUN_CONFIG:
+                yield TestConfiguration(
+                    directory, build, executable, args, cpu_count, timeout, memory_mb
+                )
 
 
 def main() -> None:
     """Run the test matrix."""
-    for i, args in enumerate(RUN_ARGS):
-        print(f"{i+1}) Running with arguments: {args}")
-        for j, (directory, build, executable) in enumerate(RUN_COMMANDS):
-            command: str = f"cd {directory} && {build} && time ./{executable} {args}"
-            print(f"\t{j+1}) `{command}`")
-            subprocess_run(["./remoterun.sh", command])  # noqa: S603
-            print("")
-        print("\n")
+    for test in (progress_bar := tqdm(get_test_suite(), leave=True)):
+        progress_bar.set_description(
+            f"Starting {test.directory.name} @ '{test.args}' ({test.cpu_count} cores, {test.memory_mb/1000}GB RAM)"
+        )
+        test.run()
 
 
 if __name__ == "__main__":
