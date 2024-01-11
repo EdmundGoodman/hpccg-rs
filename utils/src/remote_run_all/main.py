@@ -49,17 +49,17 @@ RUN_CONFIG: list[tuple[Path, str, Path]] = [
         RUST_BUILD_COMMAND,
         RUST_EXECUTABLE_PREFIX / "hpccg-rs-parallel",
     ),
-]
+][:2]
 
 RUN_ARGS: list[str] = [
     "50 50 50",
-    "100 100 100",
-    "150 150 150",
-    "200 200 200",
-    "250 250 250",
-    "300 300 300",
-    "350 350 350",
-    "400 400 400",
+    #"100 100 100",
+    #"150 150 150",
+    #"200 200 200",
+    #"250 250 250",
+    #"300 300 300",
+    #"350 350 350",
+    #"400 400 400",
 ]
 
 BATCH_CONFIG: list[tuple[int, str, int]] = [
@@ -80,8 +80,7 @@ class TestConfiguration:
 
     def generate_sbatch_file(self) -> str:
         """Create a .sbatch file from the test's configuration."""
-        return dedent(f"""
-        #!/bin/sh
+        return dedent(f"""#!/bin/sh
         #SBATCH --job-name=multicore-cpu
         #SBATCH --partition=cpu-batch
         #SBATCH --cpus-per-task={self.cpu_count}
@@ -104,14 +103,19 @@ class TestConfiguration:
         with NamedTemporaryFile(prefix="benchmark_", suffix=".sbatch", dir=Path.cwd(), mode="w+") as sbatch_tmp:
             sbatch_tmp.write(self.generate_sbatch_file())
             sbatch_tmp.flush()
-            subprocess.run(["cat", Path(sbatch_tmp.name)])  # noqa: S603
-            batch_no = subprocess.check_output(["echo", "batch_no"])  # noqa: S603
+            batch_no = None
+            try:
+                batch_no = subprocess.check_output(["sbatch", Path(sbatch_tmp.name)])  # noqa: S603
+            except subprocess.CalledProcessError as e:
+                print(e.output)
+                exit()
             print(f"===== Job {batch_no} has been submitted! =====")
             output_directory = Path(f"./{batch_no}/")
             output_directory.mkdir()
             print(f"===== Current job queue: =====")
-            subprocess.run(["squeue", "-u", "$( whoami )", "-o", "%.8i %.20j %.10T %.5M %.20R %.20e"])  # noqa: S603
-
+            user = subprocess.check_output(["whoami"])
+            subprocess.run(["squeue", "-u", user, "-o", "%.8i %.20j %.10T %.5M %.20R %.20e"])  # noqa: S603
+        exit()
 
 def get_test_suite() -> Iterator[TestConfiguration]:
     """Yield an iterator over the test suite."""
