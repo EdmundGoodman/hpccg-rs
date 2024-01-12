@@ -7,6 +7,7 @@ mod waxpby;
 mod exchange_externals;
 
 use mpi::traits::*;
+use mpi::environment::Universe;
 
 pub use compute_residual::compute_residual;
 use ddot::ddot;
@@ -49,6 +50,7 @@ pub fn solver(
     x: &[f64],
     max_iterations: i32,
     tolerance: f64,
+    universe: &Universe,
 ) -> (Vec<f64>, i32, f64, Vec<f64>) {
     let t_begin: f64 = mytimer();
     let mut t_total: f64 = 0.0;
@@ -72,7 +74,7 @@ pub fn solver(
     let mut rtrans: f64 = 0.0;
     let mut oldrtrans: f64 = 0.0;
 
-    let universe = mpi::initialize().unwrap();
+    // let universe = mpi::initialize().unwrap();
     let world = universe.world();
     let rank = world.rank();
 
@@ -91,7 +93,7 @@ pub fn solver(
     tock(&t_total, &mut t_waxpby);
 
     tick(&mut t_mpi_exchange);
-    exchange_externals(A, &p);
+    exchange_externals(A, &p, &universe);
     tock(&t_total, &mut t_mpi_exchange);
 
     tick(&mut t_total);
@@ -108,7 +110,7 @@ pub fn solver(
 
     normr = rtrans.sqrt();
 
-    if (rank == 0) {
+    if rank == 0 {
         println!("Initial Residual = {normr:+.5e}");
     }
 
@@ -138,7 +140,7 @@ pub fn solver(
         }
 
         tick(&mut t_mpi_exchange);
-        exchange_externals(A, &p);
+        exchange_externals(A, &p, &universe);
         tock(&t_total, &mut t_mpi_exchange);
 
         tick(&mut t_total);
@@ -174,11 +176,12 @@ pub fn solver(
 
 #[test]
 fn test_solver() {
+    let universe = mpi::initialize().unwrap();
     let (nx, ny, nz) = (5, 5, 5);
-    let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(nx, ny, nz);
+    let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(nx, ny, nz, &universe);
     let max_iter = 150;
     let tolerance = 5e-40;
-    let (result, iterations, normr, _) = solver(&matrix, &rhs, &guess, max_iter, tolerance);
+    let (result, iterations, normr, _) = solver(&matrix, &rhs, &guess, max_iter, tolerance, &universe);
     let residual = compute_residual(matrix.local_nrow, &result, &exact);
     assert!(normr < tolerance);
     assert!(iterations < max_iter);
@@ -186,4 +189,5 @@ fn test_solver() {
     for (actual, expected) in result.iter().zip(exact) {
         assert!((expected - actual).abs() < 1e-5);
     }
+    drop(universe);
 }
