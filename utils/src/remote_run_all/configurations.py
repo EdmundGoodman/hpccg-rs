@@ -52,12 +52,13 @@ TRANSLATIONS: list[tuple[Path, str, Path]] = [
 ]
 
 
-def _compare_translations_test_suite(
+def generate_compare_translations_test_suite(
     run_args: list[str],
     cpu_count: int,
     timeout: str,
     memory_mb: int
 ) -> Iterator[TestConfiguration]:
+    """Get an iterator over a specified test suite for comparing translations."""
     run_configs = [ORIGINAL] + TRANSLATIONS
     for run_arg in run_args:
         for (directory, build, executable) in run_configs:
@@ -66,13 +67,14 @@ def _compare_translations_test_suite(
             )
 
 
-def _strong_scaling_test_suite(
+def generate_strong_scaling_test_suite(
     directory: Path,
     build: str,
     executable: Path,
     timeout: str,
     memory_mb: int
 ) -> Iterator[TestConfiguration]:
+    """Get an iterator over a specified test suite for strong scaling."""
     cpu_counts = [2**i for i in range(0,7)]
     run_args = [f"64 64 {2**i}" for i in reversed(range(4,11))]
     for cpu_count, run_arg in zip(cpu_counts, run_args):
@@ -81,38 +83,17 @@ def _strong_scaling_test_suite(
         )
 
 
-def _weak_scaling_test_suite(
-        directory: Path,
-        build: str,
-        executable: Path,
-        timeout: str,
-        memory_mb: int
+def generate_weak_scaling_test_suite(
+    directory: Path,
+    build: str,
+    executable: Path,
+    timeout: str,
+    memory_mb: int
 ) -> Iterator[TestConfiguration]:
+    """Get an iterator over a specified test suite for weak scaling."""
     cpu_counts = [2**i for i in range(0,7)]
     run_args = [f"64 64 {2**i}" for i in reversed(range(4,11))]
     for cpu_count, run_arg in zip(cpu_counts, run_args):
         yield TestConfiguration(
             directory, build, executable, run_arg, cpu_count, timeout, memory_mb
         )
-
-
-def compare_translations_test_suite() -> Iterator[TestConfiguration]:
-    cpu_count = 40
-    timeout = "60:00"
-    memory_mb = 60_000
-    run_args = [f"{x} {x} {x}" for x in range(50, 401, 50)]
-    yield from _compare_translations_test_suite(
-        run_args, cpu_count, timeout, memory_mb
-    )
-
-
-def strong_scaling_test_suite() -> Iterator[TestConfiguration]:
-    timeout = "60:00"
-    memory_mb = 60_000
-    yield from _strong_scaling_test_suite(*ORIGINAL, timeout, memory_mb)
-
-
-def weak_scaling_test_suite() -> Iterator[TestConfiguration]:
-    timeout = "60:00"
-    memory_mb = 60_000
-    yield from _weak_scaling_test_suite(*ORIGINAL, timeout, memory_mb)
