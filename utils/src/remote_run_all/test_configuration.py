@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """A class for test configurations on batch compute."""
 
-from subprocess import run as subprocess_run
-from pathlib import Path
-from textwrap import dedent
-from dataclasses import dataclass
-from tempfile import NamedTemporaryFile
 from contextlib import chdir
+from dataclasses import dataclass
+from pathlib import Path
+from subprocess import run as subprocess_run
+from tempfile import NamedTemporaryFile
+from textwrap import dedent
+
 
 @dataclass
 class TestConfiguration:
+    """A dataclass representing a batch compute test job."""
 
     directory: Path
     build_command: str
@@ -22,7 +24,8 @@ class TestConfiguration:
 
     def generate_sbatch_file(self) -> str:
         """Create a .sbatch file from the test's configuration."""
-        return dedent(f"""
+        return dedent(
+            f"""
         #!/bin/sh
         #SBATCH --job-name=multicore-cpu
         #SBATCH --partition=cpu-batch
@@ -39,12 +42,16 @@ class TestConfiguration:
         cd {self.directory}
         {self.build_command}
         time ./{self.run_command} {self.args}
-        """[1:])
+        """[
+                1:
+            ]
+        )
 
     def run(self) -> None:
         """Run the specified test on batch compute."""
-        with chdir(Path(__file__).parent):
-            with NamedTemporaryFile(suffix=".sbatch", dir=Path("./"), mode="w+") as sbatch_tmp:
-                sbatch_tmp.write(self.generate_sbatch_file())
-                sbatch_tmp.flush()
-                subprocess_run(["./remoterun.sh", Path(sbatch_tmp.name)])
+        with chdir(Path(__file__).parent), NamedTemporaryFile(
+            suffix=".sbatch", dir=Path("./"), mode="w+"
+        ) as sbatch_tmp:
+            sbatch_tmp.write(self.generate_sbatch_file())
+            sbatch_tmp.flush()
+            subprocess_run(["./remoterun.sh", Path(sbatch_tmp.name)])  # noqa: S603

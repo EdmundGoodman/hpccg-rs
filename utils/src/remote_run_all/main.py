@@ -4,11 +4,10 @@
 from collections.abc import Iterator
 
 from configurations import (
+    ORIGINAL,
     generate_compare_translations_test_suite,
     generate_strong_scaling_test_suite,
     generate_weak_scaling_test_suite,
-    ORIGINAL,
-    TRANSLATIONS
 )
 from test_configuration import TestConfiguration
 
@@ -30,11 +29,7 @@ def strong_scaling_test_suite() -> Iterator[TestConfiguration]:
     memory_mb = 60_000
     directory, build, executable = ORIGINAL
     yield from generate_strong_scaling_test_suite(
-        directory,
-        build,
-        executable,
-        timeout,
-        memory_mb
+        directory, build, executable, timeout, memory_mb
     )
 
 
@@ -44,11 +39,7 @@ def weak_scaling_test_suite() -> Iterator[TestConfiguration]:
     memory_mb = 60_000
     directory, build, executable = ORIGINAL
     yield from generate_weak_scaling_test_suite(
-        directory,
-        build,
-        executable,
-        timeout,
-        memory_mb
+        directory, build, executable, timeout, memory_mb
     )
 
 
@@ -59,7 +50,7 @@ def main() -> None:
             f"Starting {test.directory.name} @ '{test.args}' "
             f"({test.cpu_count} cores, {test.memory_mb/1000}GB RAM)"
         )
-        # test.run()
+        test.run()
         print("\n")
 
 

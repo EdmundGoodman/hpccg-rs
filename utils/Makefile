@@ -15,7 +15,7 @@ install:
 check: .venv/
 	poetry run black src
 	poetry run isort src
-	poetry run ruff check src
+	poetry run ruff check src --fix --exit-non-zero-on-fix
 	poetry run mypy src
 
 ### Execution ###

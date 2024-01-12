@@ -6,14 +6,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from re import search as re_search
 from typing import Optional
-# from functools import reduce
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
+
 plt.style.use("seaborn-v0_8")
-#plt.rcParams["figure.figsize"] = [16, 9]
-#plt.rcParams["figure.dpi"] = 200
 
 RESULTS_DIRECTORY: Path = Path("src/analyse_remote_runs/all_runs")
 
@@ -90,12 +89,17 @@ def get_run_results() -> Iterator[RunResult | None]:
 
 def main() -> None:
     """Analyse the specified remote runs."""
-    data_series: dict[str, list[tuple[int,float]]] = {}
+    data_series: dict[str, list[tuple[int, float]]] = {}
     for run_result in get_run_results():
+        # from functools import reduce
         # size = reduce(lambda x, y: x * y, run_result.dimensions)
         size = run_result.dimensions[0]
         # Ignore some with missing data...
-        if run_result is None or run_result.dimensions[0] >= 350 or "parallel" in run_result.name:
+        if (
+            run_result is None
+            or run_result.dimensions[0] >= 350
+            or "parallel" in run_result.name
+        ):
             continue
         if run_result.name not in data_series:
             data_series[run_result.name] = []
