@@ -17,7 +17,7 @@ fn main() {
             y.parse::<usize>().expect("Failed to parse number!"),
             z.parse::<usize>().expect("Failed to parse number!"),
         ),
-        _ =>(25, 25, 25),
+        _ => (25, 25, 25),
     };
 
     let (matrix, guess, rhs, exact) = hpccg::SparseMatrix::generate_matrix(nx, ny, nz);

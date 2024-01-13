@@ -13,18 +13,6 @@ pub fn ddot(_width: usize, lhs: &[f64], rhs: &[f64]) -> f64 {
     if std::ptr::eq(lhs, rhs) {
         lhs.par_iter().map(|x| x * x).sum()
     } else {
-        lhs.par_iter().zip(rhs.par_iter())
-            .map(|(x, y)| x * y).sum()
+        lhs.par_iter().zip(rhs.par_iter()).map(|(x, y)| x * y).sum()
     }
 }
-
-// #[test]
-// fn test_ddot() {
-//     let width = 3;
-//     let lhs = vec![1.0, 2.0, 3.0];
-//     let rhs = vec![3.0, 2.0, 1.0];
-//     let result = ddot(width, &lhs, &rhs);
-//     assert_eq!(result, 10.0);
-//     let result = ddot(width, &lhs, &lhs);
-//     assert_eq!(result, 14.0);
-// }
