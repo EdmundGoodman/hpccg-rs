@@ -1,6 +1,7 @@
 ### Project-specific excludes ###
 *perf.data*
 *.err
+.idea_clion/*
 
 ### C++ excludes ###
 # Prerequisites
@@ -57,4 +58,3 @@ Cargo.lock
 .idea/shelf/
 .idea/tasks.xml
 .idea/sonarlint/
-

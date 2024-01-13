@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Black">
-    <option name="sdkName" value="Python 3.11" />
+    <option name="sdkName" value="Poetry (hpccg-rs)" />
   </component>
-  <component name="JsBuildToolPackageJson" sorting="DEFINITION_ORDER" />
 </project>
