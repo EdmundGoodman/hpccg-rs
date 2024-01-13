@@ -56,27 +56,3 @@ pub fn sparsemv(matrix: &SparseMatrix, vector: &[f64]) -> Vec<f64> {
     // }
     // result
 }
-
-#[test]
-fn test_sparsemv() {
-    let universe = mpi::initialize().unwrap();
-
-    let (matrix, _, _, _) = SparseMatrix::generate_matrix(2, 2, 2, &universe);
-    let vx = vec![20.0; 8];
-    let vy = sparsemv(&matrix, &vx);
-    assert_eq!(vy, vec![400.0; 8]);
-
-    let (matrix, _, _, _) = SparseMatrix::generate_matrix(3, 3, 3, &universe);
-    let vx = vec![
-        20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 10.0, 1.0, 10.0,
-        16.0, 10.0, 16.0, 20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0,
-    ];
-    let expected_vy = vec![
-        461.0, 287.0, 461.0, 287.0, 21.0, 287.0, 461.0, 287.0, 461.0, 287.0, 21.0, 287.0, 21.0,
-        -385.0, 21.0, 287.0, 21.0, 287.0, 461.0, 287.0, 461.0, 287.0, 21.0, 287.0, 461.0, 287.0,
-        461.0,
-    ];
-    let vy = sparsemv(&matrix, &vx);
-    assert_eq!(vy, expected_vy);
-    drop(universe);
-}

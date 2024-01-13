@@ -2,6 +2,8 @@ use mpi::traits::*;
 
 pub mod hpccg;
 
+mod tests;
+
 /// The driver code for the calculating the conjugate gradient.
 ///
 /// First,the progam generatess the matrix, right hand side vector,

@@ -6,6 +6,12 @@ mod sparsmv;
 mod waxpby;
 mod exchange_externals;
 
+pub mod hpccg_internals {
+    pub use super::ddot::ddot;
+    pub use super::sparsmv::sparsemv;
+    pub use super::waxpby::waxpby;
+}
+
 use mpi::traits::*;
 use mpi::environment::Universe;
 
@@ -172,22 +178,4 @@ pub fn solver(
             t_mpi_exchange,
         ],
     )
-}
-
-#[test]
-fn test_solver() {
-    let universe = mpi::initialize().unwrap();
-    let (nx, ny, nz) = (5, 5, 5);
-    let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(nx, ny, nz, &universe);
-    let max_iter = 150;
-    let tolerance = 5e-40;
-    let (result, iterations, normr, _) = solver(&matrix, &rhs, &guess, max_iter, tolerance, &universe);
-    let residual = compute_residual(matrix.local_nrow, &result, &exact);
-    assert!(normr < tolerance);
-    assert!(iterations < max_iter);
-    assert!(residual < 1e-15);
-    for (actual, expected) in result.iter().zip(exact) {
-        assert!((expected - actual).abs() < 1e-5);
-    }
-    drop(universe);
 }
