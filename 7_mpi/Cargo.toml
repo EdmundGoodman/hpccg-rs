@@ -15,4 +15,5 @@ debug = true
 
 [dependencies]
 libc = "0.2.149"
+mpi = "0.7.0"
 rayon = "1.8.0"
