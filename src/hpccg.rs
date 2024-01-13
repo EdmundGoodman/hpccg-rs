@@ -12,6 +12,15 @@ pub use sparse_matrix::SparseMatrix;
 use sparsmv::sparsemv;
 use waxpby::waxpby;
 
+pub mod hpccg_internals {
+    pub use super::compute_residual::compute_residual;
+    pub use super::ddot::ddot;
+    pub use super::mytimer::mytimer;
+    pub use super::sparse_matrix::SparseMatrix;
+    pub use super::sparsmv::sparsemv;
+    pub use super::waxpby::waxpby;
+}
+
 /// Store the start time for a code section.
 fn tick(t0: &mut f64) {
     *t0 = mytimer();
