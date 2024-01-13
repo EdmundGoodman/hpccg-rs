@@ -1,22 +1,22 @@
 pub mod compute_residual;
 mod ddot;
+pub mod mpi_universe;
 mod mytimer;
 pub mod sparse_matrix;
 mod sparsmv;
 mod waxpby;
+mod exchange_externals;
 
 pub use compute_residual::compute_residual;
 use ddot::ddot;
+use mpi_universe::UNIVERSE;
 use mytimer::mytimer;
 pub use sparse_matrix::SparseMatrix;
 use sparsmv::sparsemv;
 use waxpby::waxpby;
+use exchange_externals::exchange_externals;
 
-pub mod hpccg_internals {
-    pub use super::ddot::ddot;
-    pub use super::sparsmv::sparsemv;
-    pub use super::waxpby::waxpby;
-}
+use mpi::traits::*;
 
 /// Store the start time for a code section.
 fn tick(t0: &mut f64) {
@@ -58,11 +58,10 @@ pub fn solver(
     let mut t_waxpby: f64 = 0.0;
     let mut t_sparsemv: f64 = 0.0;
     let mut t_mpi_allreduce: f64 = 0.0;
+    let mut t_mpi_exchange: f64 = 0.0;
 
     let nrow = A.local_nrow;
     let ncol = A.local_ncol;
-    // `rank` only used in MPI mode
-    let _rank: i32 = 0;
 
     let mut r: Vec<f64> = Vec::with_capacity(nrow);
     let mut p: Vec<f64> = Vec::with_capacity(ncol);
@@ -75,18 +74,26 @@ pub fn solver(
     let mut rtrans: f64 = 0.0;
     let mut oldrtrans: f64 = 0.0;
 
-    // let print_freq = (max_iter/10).max(1).min(50);
-    let mut print_freq = max_iterations / 10;
-    if print_freq > 50 {
-        print_freq = 50;
-    } else if print_freq < 1 {
-        print_freq = 1;
-    }
+    let world = UNIVERSE.world();
+    let rank = world.rank();
+
+    // TODO: Propagate this across all other versions
+    let print_freq = (max_iterations/10).max(1).min(50);
+    // let mut print_freq = max_iterations / 10;
+    // if print_freq > 50 {
+    //     print_freq = 50;
+    // } else if print_freq < 1 {
+    //     print_freq = 1;
+    // }
 
     // `p` is of length `ncols`, so copy `x` to `p` for sparse matrix-vector operation
     tick(&mut t_total);
     p = waxpby(result.len(), 1.0, &result, 0.0, b);
     tock(&t_total, &mut t_waxpby);
+
+    tick(&mut t_mpi_exchange);
+    exchange_externals(A, &p);
+    tock(&t_total, &mut t_mpi_exchange);
 
     tick(&mut t_total);
     Ap = sparsemv(A, &p);
@@ -102,7 +109,9 @@ pub fn solver(
 
     normr = rtrans.sqrt();
 
-    println!("Initial Residual = {normr:+.5e}");
+    if rank == 0 {
+        println!("Initial Residual = {normr:+.5e}");
+    }
 
     for k in 1..max_iterations {
         if normr <= tolerance {
@@ -125,9 +134,13 @@ pub fn solver(
         }
 
         normr = rtrans.sqrt();
-        if k % print_freq == 0 || k + 1 == max_iterations {
+        if rank == 0 && (k % print_freq == 0 || k + 1 == max_iterations) {
             println!("Iteration = {k} , Residual = {normr:+.5e}");
         }
+
+        tick(&mut t_mpi_exchange);
+        exchange_externals(A, &p);
+        tock(&t_total, &mut t_mpi_exchange);
 
         tick(&mut t_total);
         Ap = sparsemv(A, &p);
@@ -155,6 +168,23 @@ pub fn solver(
             t_waxpby,
             t_sparsemv,
             t_mpi_allreduce,
+            t_mpi_exchange,
         ],
     )
+}
+
+#[test]
+fn test_solver() {
+    let (nx, ny, nz) = (5, 5, 5);
+    let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(nx, ny, nz);
+    let max_iter = 150;
+    let tolerance = 5e-40;
+    let (result, iterations, normr, _) = solver(&matrix, &rhs, &guess, max_iter, tolerance);
+    let residual = compute_residual(matrix.local_nrow, &result, &exact);
+    assert!(normr < tolerance);
+    assert!(iterations < max_iter);
+    assert!(residual < 1e-15);
+    for (actual, expected) in result.iter().zip(exact) {
+        assert!((expected - actual).abs() < 1e-5);
+    }
 }

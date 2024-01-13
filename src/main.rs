@@ -1,6 +1,6 @@
-pub mod hpccg;
+use mpi::traits::*;
 
-mod tests;
+pub mod hpccg;
 
 /// The driver code for the calculating the conjugate gradient.
 ///
@@ -17,9 +17,9 @@ fn main() {
             y.parse::<usize>().expect("Failed to parse number!"),
             z.parse::<usize>().expect("Failed to parse number!"),
         ),
-        _ => (25, 25, 25),
+        _ =>(25, 25, 25),
     };
-
+    
     let (matrix, guess, rhs, exact) = hpccg::SparseMatrix::generate_matrix(nx, ny, nz);
     let max_iter = 150;
     let tolerance = 0.0;
