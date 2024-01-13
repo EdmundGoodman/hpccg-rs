@@ -1,3 +1,6 @@
+use mpi::environment::Universe;
+use mpi::traits::*;
+
 /// A data structure representing a sparse matrix mesh
 ///
 /// # Fields
@@ -26,6 +29,17 @@ pub struct SparseMatrix {
     pub row_start_inds: Vec<usize>,
     pub list_of_vals: Vec<f64>,
     pub list_of_inds: Vec<usize>,
+    // MPI only
+    pub num_external: i32,
+    pub num_send_neighbors: i32,
+    pub external_index: i32,  // &<'a>
+    pub external_local_index: i32,  // &<'a>
+    pub total_to_be_sent: i32,
+    pub elements_to_send: i32,  // &<'a>
+    pub neighbors: i32,  // &<'a>
+    pub recv_length: i32,  // &<'a>
+    pub send_length: i32,  // &<'a>
+    pub send_buffer: f64,  // &<'a>
 }
 
 impl SparseMatrix {
@@ -45,7 +59,12 @@ impl SparseMatrix {
         nx: usize,
         ny: usize,
         nz: usize,
+        universe: &Universe,
     ) -> (Self, Vec<f64>, Vec<f64>, Vec<f64>) {
+        let world = universe.world();
+        let size = world.size() as usize;
+        let rank = world.rank() as usize;
+
         let use_7pt_stencil = false;
 
         // The size of our sub-block (must be non-zero)
@@ -53,12 +72,20 @@ impl SparseMatrix {
         assert!(local_nrow > 0);
         // The approximate number of non-zeros per row (excluding boundary nodes)
         let local_nnz = 27 * local_nrow;
-        // Each processor gets a section of a chimney stack domain
-        let start_row = 0;
-        let stop_row = local_nrow - 1;
+
+        // Total number of grid points in mesh
+        let total_nrow = local_nrow * size;
+        // Approximately 27 nonzeros per row (except for boundary nodes)
+        let total_nnz = 27 * total_nrow;
 
         // In non-mpi mode, the total row, column, and non-zero sizes are the same as the local ones
-        let (total_nnz, total_nrow, local_ncol) = (local_nnz, local_nrow, local_nrow);
+        // let (total_nnz, total_nrow, local_ncol) = (local_nnz, local_nrow, local_nrow);
+        let local_ncol = local_nrow;
+
+        // Each processor gets a section of a chimney stack domain
+        let start_row = local_nrow * rank;
+        let stop_row = start_row + local_nrow - 1;
+
 
         // The number of non-zero numbers in each row
         let mut nnz_in_row = Vec::with_capacity(local_nrow);
@@ -99,7 +126,7 @@ impl SparseMatrix {
                                     && (sx_ix < (nx as i32))
                                     && (sy_iy >= 0)
                                     && (sy_iy < (ny as i32))
-                                    && (curcol >= 0 && curcol < (local_nrow as i32))
+                                    && (curcol >= 0 && curcol < (total_nrow as i32))
                                 {
                                     if !use_7pt_stencil || (sz * sz + sy * sy + sx * sx <= 1) {
                                         // This logic will skip over point that are not part of
@@ -137,6 +164,17 @@ impl SparseMatrix {
             row_start_inds,
             list_of_vals,
             list_of_inds,
+            // MPI only
+            num_external: 0,
+            num_send_neighbors: 0,
+            external_index: 0,
+            external_local_index: 0,
+            total_to_be_sent: 0,
+            elements_to_send: 0,
+            neighbors: 0,
+            recv_length: 0,
+            send_length: 0,
+            send_buffer: 0.0,
         };
         (matrix, guess, rhs, exact)
     }

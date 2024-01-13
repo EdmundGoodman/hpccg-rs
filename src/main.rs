@@ -1,3 +1,5 @@
+use mpi::traits::*;
+
 pub mod hpccg;
 
 mod tests;
@@ -17,15 +19,17 @@ fn main() {
             y.parse::<usize>().expect("Failed to parse number!"),
             z.parse::<usize>().expect("Failed to parse number!"),
         ),
-        _ => (25, 25, 25),
+        _ =>(25, 25, 25),
     };
 
-    let (matrix, guess, rhs, exact) = hpccg::SparseMatrix::generate_matrix(nx, ny, nz);
+    let universe = mpi::initialize().unwrap();
+
+    let (matrix, guess, rhs, exact) = hpccg::SparseMatrix::generate_matrix(nx, ny, nz, &universe);
     let max_iter = 150;
     let tolerance = 0.0;
 
     let (result, iterations, normr, times) =
-        hpccg::solver(&matrix, &rhs, &guess, max_iter, tolerance);
+        hpccg::solver(&matrix, &rhs, &guess, max_iter, tolerance, &universe);
 
     let ddot_flops = iterations as i64 * 4 * matrix.total_nrow as i64;
     let waxpby_flops = iterations as i64 * 6 * matrix.total_nrow as i64;

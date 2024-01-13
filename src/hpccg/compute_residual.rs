@@ -10,10 +10,8 @@ use rayon::prelude::*;
 /// * `actual` - The vector of actual values.
 /// * `expected` - The vector of expected values.
 pub fn compute_residual(_width: usize, actual: &[f64], expected: &[f64]) -> f64 {
-    actual
-        .par_iter()
-        .zip(expected.par_iter())
-        .map(|(x, y)| (x - y).abs())
+    actual.par_iter().zip(expected.par_iter())
+        .map(|(x, y)| (x-y).abs())
         // Need to account for f64 not being totally ordered (https://stackoverflow.com/a/50308360)
         .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"))
         .unwrap_or(0.0)
