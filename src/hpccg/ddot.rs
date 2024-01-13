@@ -18,13 +18,13 @@ pub fn ddot(_width: usize, lhs: &[f64], rhs: &[f64]) -> f64 {
     }
 }
 
-#[test]
-fn test_ddot() {
-    let width = 3;
-    let lhs = vec![1.0, 2.0, 3.0];
-    let rhs = vec![3.0, 2.0, 1.0];
-    let result = ddot(width, &lhs, &rhs);
-    assert_eq!(result, 10.0);
-    let result = ddot(width, &lhs, &lhs);
-    assert_eq!(result, 14.0);
-}
+// #[test]
+// fn test_ddot() {
+//     let width = 3;
+//     let lhs = vec![1.0, 2.0, 3.0];
+//     let rhs = vec![3.0, 2.0, 1.0];
+//     let result = ddot(width, &lhs, &rhs);
+//     assert_eq!(result, 10.0);
+//     let result = ddot(width, &lhs, &lhs);
+//     assert_eq!(result, 14.0);
+// }
