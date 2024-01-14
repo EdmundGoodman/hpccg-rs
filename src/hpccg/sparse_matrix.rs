@@ -30,10 +30,10 @@ pub struct SparseMatrix {
     pub list_of_vals: Vec<f64>,
     pub list_of_inds: Vec<usize>,
     // MPI only
-    pub num_external: i32,
+    pub num_external: usize,
     pub num_send_neighbors: i32,
-    pub external_index: i32,  // &<'a>
-    pub external_local_index: i32,  // &<'a>
+    pub external_index: Vec<usize>,  // &<'a>
+    pub external_local_index: Vec<usize>,  // &<'a>
     pub total_to_be_sent: i32,
     pub elements_to_send: i32,  // &<'a>
     pub neighbors: i32,  // &<'a>
@@ -167,8 +167,8 @@ impl SparseMatrix {
             // MPI only
             num_external: 0,
             num_send_neighbors: 0,
-            external_index: 0,
-            external_local_index: 0,
+            external_index: vec![],
+            external_local_index: vec![],
             total_to_be_sent: 0,
             elements_to_send: 0,
             neighbors: 0,

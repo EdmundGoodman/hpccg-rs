@@ -5,8 +5,7 @@ use super::SparseMatrix;
 
 pub fn exchange_externals(matrix: &SparseMatrix, vector: &[f64], universe: &Universe) {
     let world = universe.world();
-    let size = world.size();
-    let rank = world.rank();
-
-    let local_nrow = matrix.local_nrow;
+    let _size = world.size();
+    let _rank = world.rank();
+    let _local_nrow = matrix.local_nrow;
 }

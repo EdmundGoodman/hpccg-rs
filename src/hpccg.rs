@@ -5,6 +5,7 @@ pub mod sparse_matrix;
 mod sparsmv;
 mod waxpby;
 mod exchange_externals;
+pub mod make_local_matrix;
 
 pub mod hpccg_internals {
     pub use super::ddot::ddot;
