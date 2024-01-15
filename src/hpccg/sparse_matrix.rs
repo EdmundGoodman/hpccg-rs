@@ -28,18 +28,18 @@ pub struct SparseMatrix {
     pub nnz_in_row: Vec<usize>,
     pub row_start_inds: Vec<usize>,
     pub list_of_vals: Vec<f64>,
-    pub list_of_inds: Vec<usize>,
+    pub list_of_inds: Vec<i32>,
     // MPI only
-    pub num_external: usize,
-    pub num_send_neighbors: i32,
-    pub external_index: Vec<usize>,  // &<'a>
-    pub external_local_index: Vec<usize>,  // &<'a>
-    pub total_to_be_sent: i32,
-    pub elements_to_send: i32,  // &<'a>
-    pub neighbors: i32,  // &<'a>
-    pub recv_length: i32,  // &<'a>
-    pub send_length: i32,  // &<'a>
-    pub send_buffer: f64,  // &<'a>
+    pub num_external: Option<usize>,
+    // pub num_send_neighbors: i32,
+    // pub external_index: Vec<usize>,  // &<'a>
+    // pub external_local_index: Vec<usize>,  // &<'a>
+    pub total_to_be_sent: usize,
+    // pub elements_to_send: i32,  // &<'a>
+    // pub neighbors: i32,  // &<'a>
+    // pub recv_length: i32,  // &<'a>
+    // pub send_length: i32,  // &<'a>
+    // pub send_buffer: f64,  // &<'a>
 }
 
 impl SparseMatrix {
@@ -99,7 +99,7 @@ impl SparseMatrix {
 
         // Allocate arrays that are of length local_nnz
         let mut list_of_vals: Vec<f64> = Vec::with_capacity(local_nnz);
-        let mut list_of_inds: Vec<usize> = Vec::with_capacity(local_nnz);
+        let mut list_of_inds: Vec<i32> = Vec::with_capacity(local_nnz);
 
         let mut curvalind: usize = 0;
         for iz in 0..nz {
@@ -137,7 +137,7 @@ impl SparseMatrix {
                                             list_of_vals.push(-1.0);
                                         }
                                         curvalind += 1;
-                                        list_of_inds.push(curcol as usize);
+                                        list_of_inds.push(curcol);
                                         nnzrow += 1;
                                     }
                                 }
@@ -164,17 +164,17 @@ impl SparseMatrix {
             row_start_inds,
             list_of_vals,
             list_of_inds,
-            // MPI only
-            num_external: 0,
-            num_send_neighbors: 0,
-            external_index: vec![],
-            external_local_index: vec![],
-            total_to_be_sent: 0,
-            elements_to_send: 0,
-            neighbors: 0,
-            recv_length: 0,
-            send_length: 0,
-            send_buffer: 0.0,
+            // ===== MPI only ===== //
+            num_external: None,
+            // num_send_neighbors: 0,
+            // external_index: vec![],
+            // external_local_index: vec![],
+            // total_to_be_sent: 0,
+            // elements_to_send: 0,
+            // neighbors: 0,
+            // recv_length: 0,
+            // send_length: 0,
+            // send_buffer: 0.0,
         };
         (matrix, guess, rhs, exact)
     }

@@ -13,12 +13,12 @@ pub fn sparsemv(matrix: &SparseMatrix, vector: &[f64]) -> Vec<f64> {
             |(&start_ind, &cur_nnz)| {
                     debug_assert!(start_ind + cur_nnz <= matrix.list_of_vals.len());
                     debug_assert!(start_ind + cur_nnz <= matrix.list_of_inds.len());
-                    debug_assert!(matrix.list_of_inds[start_ind + cur_nnz - 1] <= vector.len());
+                    debug_assert!(matrix.list_of_inds[start_ind + cur_nnz - 1] as usize <= vector.len());
                     let mut sum = 0.0;
                     for j in 0..cur_nnz {
                         sum += unsafe {
                             matrix.list_of_vals.get_unchecked(start_ind + j)
-                                * vector.get_unchecked(*matrix.list_of_inds.get_unchecked(start_ind + j))
+                                * vector.get_unchecked(*matrix.list_of_inds.get_unchecked(start_ind + j) as usize)
                         };
                     }
                     sum
