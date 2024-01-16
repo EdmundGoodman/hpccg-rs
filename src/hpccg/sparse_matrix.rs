@@ -36,9 +36,9 @@ pub struct SparseMatrix {
     // pub external_local_index: Vec<usize>,  // &<'a>
     pub total_to_be_sent: usize,
     // pub elements_to_send: i32,  // &<'a>
-    // pub neighbors: i32,  // &<'a>
-    // pub recv_length: i32,  // &<'a>
-    // pub send_length: i32,  // &<'a>
+    pub neighbors: Vec<usize>,  // &<'a>
+    pub recv_length: Vec<usize>,  // &<'a>
+    pub send_length: Vec<usize>,  // &<'a>
     // pub send_buffer: f64,  // &<'a>
 }
 
@@ -169,11 +169,11 @@ impl SparseMatrix {
             // num_send_neighbors: 0,
             // external_index: vec![],
             // external_local_index: vec![],
-            // total_to_be_sent: 0,
+            total_to_be_sent: 0,
             // elements_to_send: 0,
-            // neighbors: 0,
-            // recv_length: 0,
-            // send_length: 0,
+            neighbors: vec![],
+            recv_length: vec![],
+            send_length: vec![],
             // send_buffer: 0.0,
         };
         (matrix, guess, rhs, exact)

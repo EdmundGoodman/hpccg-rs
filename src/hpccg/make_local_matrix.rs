@@ -4,6 +4,7 @@ use mpi::traits::*;
 use mpi::environment::Universe;
 use mpi::collective::SystemOperation;
 use std::collections::HashMap;
+use mpi::point_to_point as p2p;
 
 const MAX_EXTERNAL: usize = 100000;
 const MAX_NUM_MESSAGES: usize = 500;
@@ -224,7 +225,20 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, universe: &Universe) {
     // Do not wait for result to come, will do that at the
     // wait call below.
 
-    // TODO: Messaging MPI stuff...
+    // Construct the requests (immediate_receive)
+    for i in 0..num_send_neighbors {
+        // p2p::immediate_receive_into(
+        //     &tmp_buffer[i], 1
+        // )
+    }
+
+    // Send the messages
+    for i in 0..num_recv_neighbors {
+
+    }
+
+    // Receive message from each send neighbor to construct 'send_list'.
+
 
     /////////////////////////////////////////////////////////////////////////
     //
@@ -283,15 +297,77 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, universe: &Universe) {
 
     let mut lengths = Vec::with_capacity(num_recv_neighbors);
 
-    // for i in 0..num_recv_neighbors {
-    //     let partner = recv_list[i];
-    //     world.reci
-    // }
+    for i in 0..num_recv_neighbors {
+        let partner = recv_list[i];
+        // world.reci
+    }
+
+    matrix.neighbors = Vec::with_capacity(MAX_NUM_NEIGHBORS);
+    matrix.recv_length = Vec::with_capacity(MAX_NUM_NEIGHBORS);
+    matrix.send_length = Vec::with_capacity(MAX_NUM_NEIGHBORS);
+
+    let mut j = 0;
+    for i in 0..num_recv_neighbors {
+        let start = j;
+        let mut newlength: usize = 0;
+
+        while (j < num_external) && (new_external_processor[j] == recv_list[i]) {
+            newlength += 1;
+            j += 1;
+            if j == num_external {
+                break;
+            }
+        }
+
+        matrix.recv_length.push(newlength);
+        matrix.neighbors.push(recv_list[i]);
+
+        length = j - start;
+        // MPI send length
+    }
+
+    // Wait for the sent lengths
+
 
     ///////////////////////////////////////////////////////////////////
     // Build "elements_to_send" list.  These are the x elements I own
     // that need to be sent to other processors.
     ///////////////////////////////////////////////////////////////////
+
+    let mut j = 0;
+    for i in 0..num_recv_neighbors {
+        // mpi immediate receive
+        j += matrix.send_length[i];
+    }
+
+    let mut j = 0;
+    for i in 0..num_recv_neighbors {
+        let start = j;
+        let mut newlength: usize = 0;
+
+        // Go through list of external elements
+        // until updating processor changes.  This is redundant, but
+        // saves us from recording this information.
+
+        while (j < num_external) && (new_external_processor[j] == recv_list[i]) {
+            newlength += 1;
+            j += 1;
+            if j == num_external {
+                break;
+            }
+        }
+        // mpi send
+    }
+
+    // wait for mpi receives
+
+    for i in 0..num_recv_neighbors {
+        // mpi wait
+    }
+
+    for i in 0..matrix.total_to_be_sent {
+        elements_to_send[i] -= matrix.start_row;
+    }
 
     ////////////////
     // Finish up !!
