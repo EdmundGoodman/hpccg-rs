@@ -2,6 +2,7 @@
 mod unit_tests {
     use mpi::environment::Universe;
     use once_cell::sync::Lazy;
+    use serial_test::serial;
 
     use crate::hpccg::hpccg_internals::{ddot, sparsemv, waxpby};
     use crate::hpccg::{compute_residual, solver, SparseMatrix};
@@ -32,6 +33,7 @@ mod unit_tests {
 
 
     #[test]
+    #[serial]  // Tests using MPI must not run concurrently
     fn test_sparse_matrix() {
         let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(2, 2, 2, &UNIVERSE.world());
         assert_eq!(matrix.local_nrow, 8);
@@ -75,6 +77,7 @@ mod unit_tests {
     }
 
     #[test]
+    #[serial]  // Tests using MPI must not run concurrently
     fn test_sparsemv() {
         let (matrix, _, _, _) = SparseMatrix::generate_matrix(2, 2, 2, &UNIVERSE.world());
         let vx = vec![20.0; 8];
@@ -115,6 +118,7 @@ mod unit_tests {
     }
 
     #[test]
+    #[serial]  // Tests using MPI must not run concurrently
     fn test_solver() {
         let (nx, ny, nz) = (5, 5, 5);
         let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(nx, ny, nz, &UNIVERSE.world());
