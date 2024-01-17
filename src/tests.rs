@@ -7,9 +7,8 @@ mod unit_tests {
     use crate::hpccg::hpccg_internals::{ddot, sparsemv, waxpby};
     use crate::hpccg::{compute_residual, solver, SparseMatrix};
 
-    static UNIVERSE: Lazy<Universe> = Lazy::new(||
-        mpi::initialize().unwrap()
-    );
+    // Use `once_cell` to define a shared MPI universe,` as rs-mpi panics when initialising a second time
+    static UNIVERSE: Lazy<Universe> = Lazy::new(|| mpi::initialize().unwrap());
 
     #[test]
     fn test_compute_residual() {
@@ -31,9 +30,8 @@ mod unit_tests {
         assert_eq!(result, 14.0);
     }
 
-
     #[test]
-    #[serial]  // Tests using MPI must not run concurrently
+    #[serial] // Tests using MPI must not run concurrently
     fn test_sparse_matrix() {
         let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(2, 2, 2, &UNIVERSE.world());
         assert_eq!(matrix.local_nrow, 8);
@@ -57,16 +55,16 @@ mod unit_tests {
         assert_eq!(inds_in_row, vec![0; 8]);
 
         let expected_vals = vec![
-            27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0,
-            -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0,
-            -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
-            27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0,
-            -1.0, -1.0, -1.0, 27.0,
+            27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0,
+            -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0,
+            -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0,
+            -1.0, -1.0, -1.0, 27.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0, -1.0,
+            -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 27.0,
         ];
         let expected_inds = vec![
-            0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5,
-            6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3,
-            4, 5, 6, 7,
+            0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4,
+            5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1,
+            2, 3, 4, 5, 6, 7,
         ];
         assert_eq!(matrix.list_of_vals, expected_vals);
         assert_eq!(matrix.list_of_inds, expected_inds);
@@ -77,7 +75,7 @@ mod unit_tests {
     }
 
     #[test]
-    #[serial]  // Tests using MPI must not run concurrently
+    #[serial] // Tests using MPI must not run concurrently
     fn test_sparsemv() {
         let (matrix, _, _, _) = SparseMatrix::generate_matrix(2, 2, 2, &UNIVERSE.world());
         let vx = vec![20.0; 8];
@@ -86,18 +84,17 @@ mod unit_tests {
 
         let (matrix, _, _, _) = SparseMatrix::generate_matrix(3, 3, 3, &UNIVERSE.world());
         let vx = vec![
-            20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 10.0, 1.0, 10.0,
-            16.0, 10.0, 16.0, 20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0,
+            20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 10.0, 1.0,
+            10.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0,
         ];
         let expected_vy = vec![
             461.0, 287.0, 461.0, 287.0, 21.0, 287.0, 461.0, 287.0, 461.0, 287.0, 21.0, 287.0, 21.0,
-            -385.0, 21.0, 287.0, 21.0, 287.0, 461.0, 287.0, 461.0, 287.0, 21.0, 287.0, 461.0, 287.0,
-            461.0,
+            -385.0, 21.0, 287.0, 21.0, 287.0, 461.0, 287.0, 461.0, 287.0, 21.0, 287.0, 461.0,
+            287.0, 461.0,
         ];
         let vy = sparsemv(&matrix, &vx);
         assert_eq!(vy, expected_vy);
     }
-
 
     #[test]
     fn test_waxpby() {
@@ -118,13 +115,21 @@ mod unit_tests {
     }
 
     #[test]
-    #[serial]  // Tests using MPI must not run concurrently
+    #[serial] // Tests using MPI must not run concurrently
     fn test_solver() {
         let (nx, ny, nz) = (5, 5, 5);
-        let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(nx, ny, nz, &UNIVERSE.world());
+        let (matrix, guess, rhs, exact) =
+            SparseMatrix::generate_matrix(nx, ny, nz, &UNIVERSE.world());
         let max_iter = 150;
         let tolerance = 5e-40;
-        let (result, iterations, normr, _) = solver(&matrix, &rhs, &guess, max_iter, tolerance, &UNIVERSE.world());
+        let (result, iterations, normr, _) = solver(
+            &matrix,
+            &rhs,
+            &guess,
+            max_iter,
+            tolerance,
+            &UNIVERSE.world(),
+        );
         let residual = compute_residual(matrix.local_nrow, &result, &exact);
         assert!(normr < tolerance);
         assert!(iterations < max_iter);
@@ -133,5 +138,4 @@ mod unit_tests {
             assert!((expected - actual).abs() < 1e-5);
         }
     }
-
 }

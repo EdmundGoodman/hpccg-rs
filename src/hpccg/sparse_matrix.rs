@@ -1,4 +1,3 @@
-use mpi::environment::Universe;
 use mpi::traits::*;
 
 /// A data structure representing a sparse matrix mesh
@@ -36,10 +35,10 @@ pub struct SparseMatrix {
     // pub external_local_index: Vec<usize>,  // &<'a>
     pub total_to_be_sent: usize,
     // pub elements_to_send: i32,  // &<'a>
-    pub neighbors: Vec<usize>,  // &<'a>
-    pub recv_length: Vec<usize>,  // &<'a>
-    pub send_length: Vec<usize>,  // &<'a>
-    // pub send_buffer: f64,  // &<'a>
+    pub neighbors: Vec<usize>,   // &<'a>
+    pub recv_length: Vec<usize>, // &<'a>
+    pub send_length: Vec<usize>, // &<'a>
+                                 // pub send_buffer: f64,  // &<'a>
 }
 
 impl SparseMatrix {
@@ -84,7 +83,6 @@ impl SparseMatrix {
         // Each processor gets a section of a chimney stack domain
         let start_row = local_nrow * rank;
         let stop_row = start_row + local_nrow - 1;
-
 
         // The number of non-zero numbers in each row
         let mut nnz_in_row = Vec::with_capacity(local_nrow);

@@ -1,11 +1,11 @@
 pub mod compute_residual;
 mod ddot;
+mod exchange_externals;
+pub mod make_local_matrix;
 mod mytimer;
 pub mod sparse_matrix;
 mod sparsmv;
 mod waxpby;
-mod exchange_externals;
-pub mod make_local_matrix;
 
 pub mod hpccg_internals {
     pub use super::ddot::ddot;
@@ -17,11 +17,11 @@ use mpi::traits::*;
 
 pub use compute_residual::compute_residual;
 use ddot::ddot;
+use exchange_externals::exchange_externals;
 use mytimer::mytimer;
 pub use sparse_matrix::SparseMatrix;
 use sparsmv::sparsemv;
 use waxpby::waxpby;
-use exchange_externals::exchange_externals;
 
 /// Store the start time for a code section.
 fn tick(t0: &mut f64) {
@@ -83,7 +83,7 @@ pub fn solver(
     let rank = world.rank();
 
     // TODO: Propagate this across all other versions
-    let print_freq = (max_iterations/10).max(1).min(50);
+    let print_freq = (max_iterations / 10).max(1).min(50);
     // let mut print_freq = max_iterations / 10;
     // if print_freq > 50 {
     //     print_freq = 50;

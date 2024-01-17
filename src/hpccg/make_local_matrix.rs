@@ -1,10 +1,8 @@
 use super::SparseMatrix;
 
-use mpi::traits::*;
-use mpi::environment::Universe;
 use mpi::collective::SystemOperation;
+use mpi::traits::*;
 use std::collections::HashMap;
-use mpi::point_to_point as p2p;
 
 const MAX_EXTERNAL: usize = 100000;
 const MAX_NUM_MESSAGES: usize = 500;
@@ -13,17 +11,16 @@ const MAX_NUM_NEIGHBORS: usize = MAX_NUM_MESSAGES;
 const DEBUG: bool = false;
 const DEBUG_DETAILS: bool = false;
 
+pub fn make_local_matrix(_matrix: &mut SparseMatrix, _world: &impl Communicator) {
+    // let mut externals: HashMap<usize, usize> = HashMap::new();
+    // let num_external: usize = 0;
+    //
+    // let size = world.size() as usize;
+    // let rank = world.rank() as usize;
 
-pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
-    let mut externals: HashMap<usize, usize> = HashMap::new();
-    let num_external: usize = 0;
-
-    let size = world.size() as usize;
-    let rank = world.rank() as usize;
-
-    // We need to convert the index values for the rows on this processor
-    // to a local index space. We need to:
-    // - Determine if each index reaches to a local value or external value
+    // // We need to convert the index values for the rows on this processor
+    // // to a local index space. We need to:
+    // // - Determine if each index reaches to a local value or external value
     // // - If local, subtract start_row from index value to get local index
     // // - If external, find out if it is already accounted for.
     // //   - If so, then do nothing,
@@ -371,5 +368,4 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     // ////////////////
     // // Finish up !!
     // ////////////////
-
 }

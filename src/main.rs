@@ -1,6 +1,6 @@
-use libc::exit;
-use mpi::traits::*;
 use crate::hpccg::make_local_matrix::make_local_matrix;
+#[allow(unused_imports)]
+use mpi::traits::*;
 
 pub mod hpccg;
 
@@ -21,7 +21,7 @@ fn main() {
             y.parse::<usize>().expect("Failed to parse number!"),
             z.parse::<usize>().expect("Failed to parse number!"),
         ),
-        _ =>(5, 5, 5),
+        _ => (5, 5, 5),
     };
 
     let universe = mpi::initialize().unwrap();
