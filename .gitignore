@@ -1,7 +1,7 @@
 ### Project-specific excludes ###
 *perf.data*
 *.err
-.idea_clion/*
+
 
 ### C++ excludes ###
 # Prerequisites
