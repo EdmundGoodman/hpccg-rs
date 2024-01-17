@@ -51,7 +51,7 @@ fn tock(t0: &f64, t: &mut f64) {
 /// * `times` - An array of times spent for each operation (ddot/waxpby/sparse_mv/total).
 #[allow(non_snake_case, unused_assignments, unused_mut)]
 pub fn solver(
-    A: &SparseMatrix,
+    mut A: &mut SparseMatrix,
     b: &[f64],
     x: &[f64],
     max_iterations: i32,
@@ -84,20 +84,15 @@ pub fn solver(
 
     // TODO: Propagate this across all other versions
     let print_freq = (max_iterations / 10).max(1).min(50);
-    // let mut print_freq = max_iterations / 10;
-    // if print_freq > 50 {
-    //     print_freq = 50;
-    // } else if print_freq < 1 {
-    //     print_freq = 1;
-    // }
 
     // `p` is of length `ncols`, so copy `x` to `p` for sparse matrix-vector operation
     tick(&mut t_total);
+    // TODO: Don't need the unused length passed here?
     p = waxpby(result.len(), 1.0, &result, 0.0, b);
     tock(&t_total, &mut t_waxpby);
 
     tick(&mut t_mpi_exchange);
-    exchange_externals(A, &p, world);
+    exchange_externals(&mut A, &mut p, world);
     tock(&t_total, &mut t_mpi_exchange);
 
     tick(&mut t_total);
@@ -144,7 +139,7 @@ pub fn solver(
         }
 
         tick(&mut t_mpi_exchange);
-        exchange_externals(A, &p, world);
+        exchange_externals(&mut A, &mut p, world);
         tock(&t_total, &mut t_mpi_exchange);
 
         tick(&mut t_total);

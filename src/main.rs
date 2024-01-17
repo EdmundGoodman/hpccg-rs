@@ -1,7 +1,7 @@
 use crate::hpccg::make_local_matrix::make_local_matrix;
-use rayon::current_num_threads;
 #[allow(unused_imports)]
 use mpi::traits::*;
+use rayon::current_num_threads;
 
 pub mod hpccg;
 
@@ -32,10 +32,11 @@ fn main() {
     let max_iter = 150;
     let tolerance = 0.0;
 
+    // TODO: Add timer for overhead making the matrix
     make_local_matrix(&mut matrix, &world);
 
     let (result, iterations, normr, times) =
-        hpccg::solver(&matrix, &rhs, &guess, max_iter, tolerance, &world);
+        hpccg::solver(&mut matrix, &rhs, &guess, max_iter, tolerance, &world);
 
     let ddot_flops = iterations as i64 * 4 * matrix.total_nrow as i64;
     let waxpby_flops = iterations as i64 * 6 * matrix.total_nrow as i64;
