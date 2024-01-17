@@ -33,7 +33,7 @@ fn main() {
 
     println!("Mini-Application Name: hpccg-parallel");
     println!("Mini-Application Version: 1.0");
-    println!("Parallelism:\n  MPI not enabled:\n  Rayon enabled:");
+    println!("Parallelism:\n  MPI not enabled:\n  Rayon enabled");
     println!("Dimensions:\n  nx: {nx}\n  ny: {ny}\n  nz: {nz}");
     println!("Number of iterations: {iterations}");
     println!("Final residual: {normr:.5e}");

@@ -24,9 +24,9 @@ mod unit_tests {
         let width = 3;
         let lhs = vec![1.0, 2.0, 3.0];
         let rhs = vec![3.0, 2.0, 1.0];
-        let result = ddot(width, &lhs, &rhs);
+        let result = ddot(width, &lhs, &rhs, &UNIVERSE.world());
         assert_eq!(result, 10.0);
-        let result = ddot(width, &lhs, &lhs);
+        let result = ddot(width, &lhs, &lhs, &UNIVERSE.world());
         assert_eq!(result, 14.0);
     }
 

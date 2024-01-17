@@ -109,7 +109,7 @@ pub fn solver(
     tock(&t_total, &mut t_waxpby);
 
     tick(&mut t_total);
-    rtrans = ddot(r.len(), &r, &r);
+    rtrans = ddot(r.len(), &r, &r, world);
     tock(&t_total, &mut t_ddot);
 
     normr = rtrans.sqrt();
@@ -130,7 +130,7 @@ pub fn solver(
         } else {
             oldrtrans = rtrans;
             tick(&mut t_total);
-            rtrans = ddot(nrow, &r, &r);
+            rtrans = ddot(nrow, &r, &r, world);
             tock(&t_total, &mut t_ddot);
             let beta = rtrans / oldrtrans;
             tick(&mut t_total);
@@ -152,7 +152,7 @@ pub fn solver(
         tock(&t_total, &mut t_sparsemv);
 
         tick(&mut t_total);
-        let alpha = ddot(r.len(), &p, &Ap);
+        let alpha = ddot(r.len(), &p, &Ap, world);
         tock(&t_total, &mut t_ddot);
 
         let alpha = rtrans / alpha;

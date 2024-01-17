@@ -1,15 +1,15 @@
 use super::SparseMatrix;
 
-use mpi::collective::SystemOperation;
 use mpi::traits::*;
-use std::collections::HashMap;
-
-const MAX_EXTERNAL: usize = 100000;
-const MAX_NUM_MESSAGES: usize = 500;
-const MAX_NUM_NEIGHBORS: usize = MAX_NUM_MESSAGES;
-
-const DEBUG: bool = false;
-const DEBUG_DETAILS: bool = false;
+// use mpi::collective::SystemOperation;
+// use std::collections::HashMap;
+//
+// const MAX_EXTERNAL: usize = 100000;
+// const MAX_NUM_MESSAGES: usize = 500;
+// const MAX_NUM_NEIGHBORS: usize = MAX_NUM_MESSAGES;
+//
+// const DEBUG: bool = false;
+// const DEBUG_DETAILS: bool = false;
 
 pub fn make_local_matrix(_matrix: &mut SparseMatrix, _world: &impl Communicator) {
     // let mut externals: HashMap<usize, usize> = HashMap::new();
@@ -17,7 +17,7 @@ pub fn make_local_matrix(_matrix: &mut SparseMatrix, _world: &impl Communicator)
     //
     // let size = world.size() as usize;
     // let rank = world.rank() as usize;
-
+    //
     // // We need to convert the index values for the rows on this processor
     // // to a local index space. We need to:
     // // - Determine if each index reaches to a local value or external value

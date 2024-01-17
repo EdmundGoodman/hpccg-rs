@@ -1,4 +1,5 @@
 use crate::hpccg::make_local_matrix::make_local_matrix;
+use rayon::current_num_threads;
 #[allow(unused_imports)]
 use mpi::traits::*;
 
@@ -44,7 +45,9 @@ fn main() {
 
     println!("Mini-Application Name: hpccg");
     println!("Mini-Application Version: 1.0");
-    println!("Parallelism:\n  MPI not enabled:\n  OpenMP not enabled:");
+    println!("Parallelism:");
+    println!("  Number of MPI ranks: {}", world.size());
+    println!("  Rayon enabled");
     println!("Dimensions:\n  nx: {nx}\n  ny: {ny}\n  nz: {nz}");
     println!("Number of iterations: {iterations}");
     println!("Final residual: {normr:.5e}");
