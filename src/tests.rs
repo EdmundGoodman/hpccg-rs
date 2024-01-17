@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod unit_tests {
-    use mpi::traits::*;
     use mpi::environment::Universe;
     use once_cell::sync::Lazy;
 
@@ -34,7 +33,7 @@ mod unit_tests {
 
     #[test]
     fn test_sparse_matrix() {
-        let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(2, 2, 2, &UNIVERSE);
+        let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(2, 2, 2, &UNIVERSE.world());
         assert_eq!(matrix.local_nrow, 8);
         assert_eq!(matrix.local_nnz, 216);
         assert_eq!(matrix.nnz_in_row, vec![8; 8]);
@@ -44,7 +43,7 @@ mod unit_tests {
             .iter()
             .map(|&x| matrix.list_of_vals[x])
             .collect();
-        let inds_in_row: Vec<usize> = matrix
+        let inds_in_row: Vec<i32> = matrix
             .row_start_inds
             .iter()
             .map(|&x| matrix.list_of_inds[x])
@@ -77,12 +76,12 @@ mod unit_tests {
 
     #[test]
     fn test_sparsemv() {
-        let (matrix, _, _, _) = SparseMatrix::generate_matrix(2, 2, 2, &UNIVERSE);
+        let (matrix, _, _, _) = SparseMatrix::generate_matrix(2, 2, 2, &UNIVERSE.world());
         let vx = vec![20.0; 8];
         let vy = sparsemv(&matrix, &vx);
         assert_eq!(vy, vec![400.0; 8]);
 
-        let (matrix, _, _, _) = SparseMatrix::generate_matrix(3, 3, 3, &UNIVERSE);
+        let (matrix, _, _, _) = SparseMatrix::generate_matrix(3, 3, 3, &UNIVERSE.world());
         let vx = vec![
             20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 10.0, 1.0, 10.0,
             16.0, 10.0, 16.0, 20.0, 16.0, 20.0, 16.0, 10.0, 16.0, 20.0, 16.0, 20.0,
@@ -118,10 +117,10 @@ mod unit_tests {
     #[test]
     fn test_solver() {
         let (nx, ny, nz) = (5, 5, 5);
-        let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(nx, ny, nz, &UNIVERSE);
+        let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(nx, ny, nz, &UNIVERSE.world());
         let max_iter = 150;
         let tolerance = 5e-40;
-        let (result, iterations, normr, _) = solver(&matrix, &rhs, &guess, max_iter, tolerance, &UNIVERSE);
+        let (result, iterations, normr, _) = solver(&matrix, &rhs, &guess, max_iter, tolerance, &UNIVERSE.world());
         let residual = compute_residual(matrix.local_nrow, &result, &exact);
         assert!(normr < tolerance);
         assert!(iterations < max_iter);

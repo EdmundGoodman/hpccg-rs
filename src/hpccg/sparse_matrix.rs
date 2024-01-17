@@ -59,9 +59,8 @@ impl SparseMatrix {
         nx: usize,
         ny: usize,
         nz: usize,
-        universe: &Universe,
+        world: &impl Communicator,
     ) -> (Self, Vec<f64>, Vec<f64>, Vec<f64>) {
-        let world = universe.world();
         let size = world.size() as usize;
         let rank = world.rank() as usize;
 

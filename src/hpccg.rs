@@ -14,7 +14,6 @@ pub mod hpccg_internals {
 }
 
 use mpi::traits::*;
-use mpi::environment::Universe;
 
 pub use compute_residual::compute_residual;
 use ddot::ddot;
@@ -57,7 +56,7 @@ pub fn solver(
     x: &[f64],
     max_iterations: i32,
     tolerance: f64,
-    universe: &Universe,
+    world: &impl Communicator,
 ) -> (Vec<f64>, i32, f64, Vec<f64>) {
     let t_begin: f64 = mytimer();
     let mut t_total: f64 = 0.0;
@@ -81,8 +80,6 @@ pub fn solver(
     let mut rtrans: f64 = 0.0;
     let mut oldrtrans: f64 = 0.0;
 
-    // let universe = mpi::initialize().unwrap();
-    let world = universe.world();
     let rank = world.rank();
 
     // TODO: Propagate this across all other versions
@@ -100,7 +97,7 @@ pub fn solver(
     tock(&t_total, &mut t_waxpby);
 
     tick(&mut t_mpi_exchange);
-    exchange_externals(A, &p, &universe);
+    exchange_externals(A, &p, world);
     tock(&t_total, &mut t_mpi_exchange);
 
     tick(&mut t_total);
@@ -147,7 +144,7 @@ pub fn solver(
         }
 
         tick(&mut t_mpi_exchange);
-        exchange_externals(A, &p, &universe);
+        exchange_externals(A, &p, world);
         tock(&t_total, &mut t_mpi_exchange);
 
         tick(&mut t_total);

@@ -25,15 +25,16 @@ fn main() {
     };
 
     let universe = mpi::initialize().unwrap();
+    let world = universe.world();
 
-    let (mut matrix, guess, rhs, exact) = hpccg::SparseMatrix::generate_matrix(nx, ny, nz, &universe);
+    let (mut matrix, guess, rhs, exact) = hpccg::SparseMatrix::generate_matrix(nx, ny, nz, &world);
     let max_iter = 150;
     let tolerance = 0.0;
 
-    make_local_matrix(&mut matrix, &universe);
+    make_local_matrix(&mut matrix, &world);
 
     let (result, iterations, normr, times) =
-        hpccg::solver(&matrix, &rhs, &guess, max_iter, tolerance, &universe);
+        hpccg::solver(&matrix, &rhs, &guess, max_iter, tolerance, &world);
 
     let ddot_flops = iterations as i64 * 4 * matrix.total_nrow as i64;
     let waxpby_flops = iterations as i64 * 6 * matrix.total_nrow as i64;
