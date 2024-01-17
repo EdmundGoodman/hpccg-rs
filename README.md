@@ -27,3 +27,22 @@ The top-level directories in the repository are different translated versions of
 - macros for switching between rust and c++ unit test mode
 
 converting pointer arithmetic to array indexing - does this incur a performance cost?
+
+
+
+## New todo
+
+- PR fix to UK-MAC website broken links
+- HPCCG
+  - Finish MPI translation
+  - Fix and PR docs and CMakelist for original code
+  - Investigate using sprs matrix library
+  - Investigate auto-vectorisation
+  - Investigate zero-cost abstractions
+  - Unit testing framework improve ergonomics
+  - Improve testing script to include uncertainties/memory characterisation
+  - Review good papers for more todos
+  - (Kokkos version in C++)
+  - (Investigate clustering techniques other than MPI)
+- MiniMD
+  - Translate single kernel, following workflow
