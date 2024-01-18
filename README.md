@@ -28,8 +28,6 @@ The top-level directories in the repository are different translated versions of
 
 converting pointer arithmetic to array indexing - does this incur a performance cost?
 
-
-
 ## New todo
 
 - PR fix to UK-MAC website broken links
@@ -46,3 +44,11 @@ converting pointer arithmetic to array indexing - does this incur a performance 
   - (Investigate clustering techniques other than MPI)
 - MiniMD
   - Translate single kernel, following workflow
+- polyglotest
+  - "a testing framework to empower pure TDD when translating rust to C++"
+  - should be a crate
+  - add a new cargo command `ffi_test` or similar
+    - like cargo mpirun
+    - runs unit tests on C++
+  - cargo test runs as normal (or adds ffi_test alongside integration/unit/doc?)
+  - Consider wrapper for autocxx for this purpose? macros in test?
