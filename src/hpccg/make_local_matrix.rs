@@ -1,107 +1,119 @@
 use super::SparseMatrix;
 
+use mpi::collective::SystemOperation;
 use mpi::traits::*;
-// use mpi::collective::SystemOperation;
-// use std::collections::HashMap;
-//
-// const MAX_EXTERNAL: usize = 100000;
-// const MAX_NUM_MESSAGES: usize = 500;
-// const MAX_NUM_NEIGHBORS: usize = MAX_NUM_MESSAGES;
-//
-// const DEBUG: bool = false;
-// const DEBUG_DETAILS: bool = false;
+use std::collections::HashMap;
 
-pub fn make_local_matrix(_matrix: &mut SparseMatrix, _world: &impl Communicator) {
-    // let mut externals: HashMap<usize, usize> = HashMap::new();
-    // let num_external: usize = 0;
-    //
-    // let size = world.size() as usize;
-    // let rank = world.rank() as usize;
-    //
-    // // We need to convert the index values for the rows on this processor
-    // // to a local index space. We need to:
-    // // - Determine if each index reaches to a local value or external value
-    // // - If local, subtract start_row from index value to get local index
-    // // - If external, find out if it is already accounted for.
-    // //   - If so, then do nothing,
-    // //   - otherwise
-    // //     - add it to the list of external indices,
-    // //     - find out which processor owns the value.
-    // //     - Set up communication for sparse MV operation.
-    //
-    // ///////////////////////////////////////////
-    // // Scan the indices and transform to local
-    // ///////////////////////////////////////////
-    //
-    // let mut external_index: Vec<usize> = vec![];
-    // let mut external_local_index: Vec<i32> = vec![-1, num_external];
-    //
-    // for i in 0..matrix.local_nrow {
-    //     let row_start_ind = matrix.row_start_inds[i];
-    //     for j in 0..matrix.nnz_in_row[i] {
-    //         let cur_ind = matrix.list_of_inds[row_start_ind + j] as usize;
-    //         if DEBUG_DETAILS {
-    //             println!("Process {rank} of {size} getting index {cur_ind} in local row {i}");
-    //         }
-    //         if matrix.start_row <= cur_ind && cur_ind <= matrix.stop_row {
-    //             matrix.list_of_inds[row_start_ind + j] -= matrix.start_row as i32;
-    //         } else {
-    //             // Must find out if we have already set up this point
-    //             if externals.contains_key(&cur_ind) {
-    //                 matrix.list_of_inds[row_start_ind + j] = -(matrix.list_of_inds[row_start_ind + j] + 1);
-    //             } else {
-    //                 let num_external = num_external + 1;
-    //                 externals.insert(cur_ind, num_external);
-    //                 if num_external <= MAX_EXTERNAL {
-    //                     external_index.push(cur_ind);
-    //                     matrix.list_of_inds[row_start_ind + j] = -(matrix.list_of_inds[row_start_ind + j] + 1);
-    //                 } else {
-    //                     panic!("Must increase `MAX_EXTERNAL` from {MAX_EXTERNAL}");
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-    //
-    // ////////////////////////////////////////////////////////////////////////////
-    // // Go through list of externals to find out which processors must be accessed.
-    // ////////////////////////////////////////////////////////////////////////////
-    //
-    // matrix.num_external = Some(num_external);
-    // let mut tmp_buffer: Vec<usize> = vec![0; size];
-    // let mut global_index_offsets: Vec<usize> = Vec::with_capacity(size);
-    //
-    // tmp_buffer[rank] = matrix.start_row;
-    //
-    // // This call sends the start_row of each ith processor to the ith
-    // // entry of global_index_offset on all processors.
-    // // Thus, each processor know the range of indices owned by all
-    // // other processors.
-    // // Note:  There might be a better algorithm for doing this, but this
-    // //        will work...
-    //
-    // // MPI_Allreduce(tmp_buffer, global_index_offsets, size, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    // // this populates globalindexoffsets
-    //
-    // world.all_reduce_into(
-    //     &tmp_buffer,
-    //     &mut global_index_offsets,
-    //     SystemOperation::sum()
-    // );
-    //
-    // let mut external_processor = Vec::with_capacity(num_external);
-    // let mut new_external_processor = vec![0usize; num_external];
-    //
-    // for i in 0..num_external {
-    //     let cur_ind = external_index[i];
-    //     for j in (0..size).rev() {
-    //         if global_index_offsets[j] <= cur_ind {
-    //             external_processor[i] = j;
-    //             break;
-    //         }
-    //     }
-    // }
-    //
+const MAX_EXTERNAL: usize = 100000;
+const MAX_NUM_MESSAGES: usize = 500;
+const MAX_NUM_NEIGHBORS: usize = MAX_NUM_MESSAGES;
+
+const DEBUG: bool = true;
+const DEBUG_DETAILS: bool = false;
+
+pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
+    let mut externals: HashMap<usize, usize> = HashMap::new();
+    let mut num_external: usize = 0;
+
+    let size = world.size() as usize;
+    let rank = world.rank() as usize;
+
+    // We need to convert the index values for the rows on this processor
+    // to a local index space. We need to:
+    // - Determine if each index reaches to a local value or external value
+    // - If local, subtract start_row from index value to get local index
+    // - If external, find out if it is already accounted for.
+    //   - If so, then do nothing,
+    //   - otherwise
+    //     - add it to the list of external indices,
+    //     - find out which processor owns the value.
+    //     - Set up communication for sparse MV operation.
+
+    ///////////////////////////////////////////
+    // Scan the indices and transform to local
+    ///////////////////////////////////////////
+
+    for i in 0..matrix.local_nrow {
+        let row_start_ind = matrix.row_start_inds[i];
+        for j in 0..matrix.nnz_in_row[i] {
+            let cur_ind = matrix.list_of_inds[row_start_ind + j] as usize;
+            if DEBUG_DETAILS {
+                println!("Process {rank} of {size} getting index {cur_ind} in local row {i}");
+            }
+            if matrix.start_row <= cur_ind && cur_ind <= matrix.stop_row {
+                matrix.list_of_inds[row_start_ind + j] -= matrix.start_row as i32;
+            } else {
+                // Must find out if we have already set up this point
+                if externals.contains_key(&cur_ind) {
+                    // Mark index as external by adding 1 and negating it
+                    matrix.list_of_inds[row_start_ind + j] =
+                        -(matrix.list_of_inds[row_start_ind + j] + 1);
+                } else {
+                    num_external = num_external + 1;
+                    externals.insert(cur_ind, num_external);
+                    if num_external <= MAX_EXTERNAL {
+                        matrix.external_index.push(cur_ind);
+                        // Mark index as external by adding 1 and negating it
+                        matrix.list_of_inds[row_start_ind + j] =
+                            -(matrix.list_of_inds[row_start_ind + j] + 1);
+                    } else {
+                        panic!("Must increase `MAX_EXTERNAL` from {MAX_EXTERNAL}");
+                    }
+                }
+            }
+        }
+    }
+
+    // TODO: Add debug timer
+    if DEBUG {
+        println!("Processor {rank} of {size}: Number of external equations = {num_external}");
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Go through list of externals to find out which processors must be accessed.
+    ////////////////////////////////////////////////////////////////////////////
+
+    let num_external = num_external; // TODO: Make immutable for debugging...
+    matrix.num_external = num_external;
+    let mut tmp_buffer: Vec<usize> = vec![0; size];
+    // Needs to be of the correct size already! (not `Vec::with_capacity(size);`)
+    let mut global_index_offsets: Vec<usize> = vec![0; size];
+
+    tmp_buffer[rank] = matrix.start_row;
+
+    // This call sends the start_row of each ith processor to the ith
+    // entry of global_index_offset on all processors.
+    // Thus, each processor know the range of indices owned by all
+    // other processors.
+    // Note:  There might be a better algorithm for doing this, but this
+    //        will work...
+
+    // MPI_Allreduce(tmp_buffer, global_index_offsets, size, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    world.all_reduce_into(
+        &tmp_buffer,
+        &mut global_index_offsets,
+        SystemOperation::sum(),
+    );
+
+    // dbg!(rank, &tmp_buffer);
+    // dbg!(rank, &global_index_offsets);
+    // dbg!(rank, &matrix.external_index);
+
+    let mut external_processor = Vec::with_capacity(num_external);
+    let mut new_external_processor = vec![0usize; num_external];
+
+    for i in 0..num_external {
+        let cur_ind = matrix.external_index[i];
+        for j in (0..size).rev() {
+            if global_index_offsets[j] <= cur_ind {
+                external_processor.push(j);
+                break;
+            }
+        }
+    }
+
+    dbg!(rank, external_processor);
+
     // ////////////////////////////////////////////////////////////////////////////
     // // Sift through the external elements. For each newly encountered external
     // // point assign it the next index in the sequence. Then look for other
@@ -111,6 +123,7 @@ pub fn make_local_matrix(_matrix: &mut SparseMatrix, _world: &impl Communicator)
     // ////////////////////////////////////////////////////////////////////////////
     //
     // let mut count = matrix.local_nrow as i32;
+    // matrix.external_index = vec![-1, num_external];
     //
     // for i in 0..num_external {
     //     if external_local_index == -1 {

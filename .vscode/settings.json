@@ -1,11 +1,12 @@
 {
-    "C_Cpp.intelliSenseEngine": "disabled",
+    // "C_Cpp.intelliSenseEngine": "disabled",
+    "C_Cpp.dimInactiveRegions": false,
     "cmake.configureOnOpen": false,
-    "clangd.arguments": [
-        "-log=verbose",
-        "-pretty",
-        "--background-index",
-        "--compile-commands-dir=${workspaceFolder}/0_original/build/compile_commands.json"
-    ],
+    // "clangd.arguments": [
+    //     "-log=verbose",
+    //     "-pretty",
+    //     "--background-index",
+    //     "--compile-commands-dir=${workspaceFolder}/0_original/build/compile_commands.json"
+    // ],
     "sonarlint.pathToCompileCommands": "${workspaceFolder}/0_original/build/compile_commands.json",
 }
