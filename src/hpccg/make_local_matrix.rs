@@ -49,8 +49,8 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
                     matrix.list_of_inds[row_start_ind + j] =
                         -(matrix.list_of_inds[row_start_ind + j] + 1);
                 } else {
-                    num_external = num_external + 1;
                     externals.insert(cur_ind, num_external);
+                    num_external = num_external + 1;
                     if num_external <= MAX_EXTERNAL {
                         matrix.external_index.push(cur_ind);
                         // Mark index as external by adding 1 and negating it
@@ -64,10 +64,16 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         }
     }
 
+    // println!("rank={}, num_external={}", rank, num_external);
+    // println!("rank={}, externals={:?}", rank, &externals);
+
     // TODO: Add debug timer
     if DEBUG {
         println!("Processor {rank} of {size}: Number of external equations = {num_external}");
     }
+
+    // TODO: Switch to multiple smaller function units called in sequence
+    // let (externals, mut num_external) = scan_and_transform_local(matrix, world);
 
     ////////////////////////////////////////////////////////////////////////////
     // Go through list of externals to find out which processors must be accessed.
@@ -95,12 +101,17 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         SystemOperation::sum(),
     );
 
-    // dbg!(rank, &tmp_buffer);
-    // dbg!(rank, &global_index_offsets);
-    // dbg!(rank, &matrix.external_index);
+    // println!("rank={}, tmp_buffer={:?}", rank, &tmp_buffer);
+    // println!(
+    //     "rank={}, global_index_offsets={:?}",
+    //     rank, &global_index_offsets
+    // );
+    // println!(
+    //     "rank={}, matrix.external_index={:?}",
+    //     rank, &matrix.external_index
+    // );
 
     let mut external_processor = Vec::with_capacity(num_external);
-    let mut new_external_processor = vec![0usize; num_external];
 
     for i in 0..num_external {
         let cur_ind = matrix.external_index[i];
@@ -112,55 +123,86 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         }
     }
 
-    dbg!(rank, external_processor);
+    // println!(
+    //     "rank={}, external_processor={:?}",
+    //     rank, &external_processor
+    // );
 
-    // ////////////////////////////////////////////////////////////////////////////
-    // // Sift through the external elements. For each newly encountered external
-    // // point assign it the next index in the sequence. Then look for other
-    // // external elements who are update by the same node and assign them the next
-    // // set of index numbers in the sequence (ie. elements updated by the same node
-    // // have consecutive indices).
-    // ////////////////////////////////////////////////////////////////////////////
-    //
-    // let mut count = matrix.local_nrow as i32;
-    // matrix.external_index = vec![-1, num_external];
-    //
-    // for i in 0..num_external {
-    //     if external_local_index == -1 {
-    //         count += 1;
-    //         external_local_index[i] = count;
-    //
-    //         for j in i+1..num_external {
-    //             if external_processor[j] == external_processor[i] {
-    //                 count += 1;
-    //                 external_local_index[i] = count;
-    //             }
-    //         }
-    //     }
-    // }
-    //
-    // for i in 0..matrix.local_nrow {
-    //     let row_start_ind = matrix.row_start_inds[i];
-    //     for j in 0..matrix.nnz_in_row[i] {
-    //         let poss_cur_ind = matrix.list_of_inds[row_start_ind + j];
-    //         if poss_cur_ind < 0 {
-    //             let cur_ind = -poss_cur_ind - 1;
-    //             matrix.list_of_inds[row_start_ind + j] = external_local_index[externals[cur_ind]]
-    //         }
-    //     }
-    // }
-    //
-    // for i in 0..num_external {
-    //     new_external_processor[external_local_index[i] - matrix.local_nrow] = external_processor[i];
-    // }
-    //
-    // if DEBUG_DETAILS {
-    //     for i in 0..num_external {
-    //         println!("Processor {rank} of {size}: external processor[{i}] = {}", external_processor[i]);
-    //         println!("Processor {rank} of {size}: new external processor[{i}] = {}", new_external_processor[i]);
-    //     }
-    // }
-    //
+    ////////////////////////////////////////////////////////////////////////////
+    // Sift through the external elements. For each newly encountered external
+    // point assign it the next index in the sequence. Then look for other
+    // external elements who are update by the same node and assign them the next
+    // set of index numbers in the sequence (ie. elements updated by the same node
+    // have consecutive indices).
+    ////////////////////////////////////////////////////////////////////////////
+
+    dbg!(num_external);
+
+    let mut count = matrix.local_nrow as i32;
+    matrix.external_local_index = vec![-1; num_external];
+
+    for i in 0..num_external {
+        if matrix.external_local_index[i] == -1 {
+            matrix.external_local_index[i] = count;
+            count += 1;
+
+            for j in i + 1..num_external {
+                if external_processor[j] == external_processor[i] {
+                    matrix.external_local_index[j] = count;
+                    count += 1;
+                }
+            }
+        }
+    }
+
+    // println!(
+    //     "rank={}, matrix.external_local_index={:?}",
+    //     rank, &matrix.external_local_index
+    // );
+
+    for i in 0..matrix.local_nrow {
+        let row_start_ind = matrix.row_start_inds[i];
+        for j in 0..matrix.nnz_in_row[i] {
+            let poss_cur_ind = matrix.list_of_inds[row_start_ind + j];
+            if poss_cur_ind < 0 {
+                let cur_ind = (-poss_cur_ind - 1) as usize;
+                // dbg!(externals[&cur_ind]);
+                matrix.list_of_inds[row_start_ind + j] =
+                    matrix.external_local_index[externals[&cur_ind]]
+            }
+        }
+    }
+
+    println!(
+        "rank={}, matrix.external_local_index={:?}",
+        rank, &matrix.external_local_index
+    );
+
+    let mut new_external_processor = vec![0usize; num_external];
+
+    for i in 0..num_external {
+        new_external_processor[matrix.external_local_index[i] as usize - matrix.local_nrow] =
+            external_processor[i];
+    }
+
+    // println!(
+    //     "rank={}, new_external_processor={:?}",
+    //     rank, &new_external_processor
+    // );
+
+    if DEBUG_DETAILS {
+        for i in 0..num_external {
+            println!(
+                "Processor {rank} of {size}: external processor[{i}] = {}",
+                external_processor[i]
+            );
+            println!(
+                "Processor {rank} of {size}: new external processor[{i}] = {}",
+                new_external_processor[i]
+            );
+        }
+    }
+
     // ////////////////////////////////////////////////////////////////////////////
     // //
     // // Count the number of neighbors from which we receive information to update
@@ -382,3 +424,56 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     // // Finish up !!
     // ////////////////
 }
+
+// pub fn scan_and_transform_local(
+//     matrix: &mut SparseMatrix,
+//     world: &impl Communicator,
+// ) -> (HashMap<usize, usize>, usize) {
+//     let mut externals: HashMap<usize, usize> = HashMap::new();
+//     let mut num_external: usize = 0;
+
+//     let size = world.size() as usize;
+//     let rank = world.rank() as usize;
+
+//     ///////////////////////////////////////////
+//     // Scan the indices and transform to local
+//     ///////////////////////////////////////////
+
+//     for i in 0..matrix.local_nrow {
+//         let row_start_ind = matrix.row_start_inds[i];
+//         for j in 0..matrix.nnz_in_row[i] {
+//             let cur_ind = matrix.list_of_inds[row_start_ind + j] as usize;
+//             if DEBUG_DETAILS {
+//                 println!("Process {rank} of {size} getting index {cur_ind} in local row {i}");
+//             }
+//             if matrix.start_row <= cur_ind && cur_ind <= matrix.stop_row {
+//                 matrix.list_of_inds[row_start_ind + j] -= matrix.start_row as i32;
+//             } else {
+//                 // Must find out if we have already set up this point
+//                 if externals.contains_key(&cur_ind) {
+//                     // Mark index as external by adding 1 and negating it
+//                     matrix.list_of_inds[row_start_ind + j] =
+//                         -(matrix.list_of_inds[row_start_ind + j] + 1);
+//                 } else {
+//                     num_external = num_external + 1;
+//                     externals.insert(cur_ind, num_external);
+//                     if num_external <= MAX_EXTERNAL {
+//                         matrix.external_index.push(cur_ind);
+//                         // Mark index as external by adding 1 and negating it
+//                         matrix.list_of_inds[row_start_ind + j] =
+//                             -(matrix.list_of_inds[row_start_ind + j] + 1);
+//                     } else {
+//                         panic!("Must increase `MAX_EXTERNAL` from {MAX_EXTERNAL}");
+//                     }
+//                 }
+//             }
+//         }
+//     }
+
+//     // TODO: Add debug timer
+//     if DEBUG {
+//         println!("Processor {rank} of {size}: Number of external equations = {num_external}");
+//     }
+
+//     (externals, num_external)
+// }
