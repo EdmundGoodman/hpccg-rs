@@ -1,6 +1,7 @@
 use super::SparseMatrix;
 
 use mpi::collective::SystemOperation;
+use mpi::request::WaitGuard;
 use mpi::traits::*;
 use std::collections::HashMap;
 
@@ -173,10 +174,10 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         }
     }
 
-    println!(
-        "rank={}, matrix.external_local_index={:?}",
-        rank, &matrix.external_local_index
-    );
+    // println!(
+    //     "rank={}, matrix.external_local_index={:?}",
+    //     rank, &matrix.external_local_index
+    // );
 
     let mut new_external_processor = vec![0usize; num_external];
 
@@ -203,94 +204,156 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         }
     }
 
-    // ////////////////////////////////////////////////////////////////////////////
-    // //
-    // // Count the number of neighbors from which we receive information to update
-    // // our external elements. Additionally, fill the array tmp_neighbors in the
-    // // following way:
-    // //      tmp_neighbors[i] = 0   ==>  No external elements are updated by
-    // //                              processor i.
-    // //      tmp_neighbors[i] = x   ==>  (x-1)/size elements are updated from
-    // //                              processor i.
-    // //
-    // ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
     //
-    // let mut tmp_neighbors = vec![0; size];
+    // Count the number of neighbors from which we receive information to update
+    // our external elements. Additionally, fill the array tmp_neighbors in the
+    // following way:
+    //      tmp_neighbors[i] = 0   ==>  No external elements are updated by
+    //                              processor i.
+    //      tmp_neighbors[i] = x   ==>  (x-1)/size elements are updated from
+    //                              processor i.
     //
-    // let mut num_recv_neighbors = 0;
-    // let mut length = 1;
+    ////////////////////////////////////////////////////////////////////////////
+
+    let mut tmp_neighbors = vec![0; size];
+
+    let mut num_recv_neighbors = 0;
+    let mut length = 1;
+
+    for i in 0..num_external {
+        if (tmp_neighbors[new_external_processor[i]] == 0) {
+            num_recv_neighbors += 1;
+            tmp_neighbors[new_external_processor[i]] = 1;
+        }
+        tmp_neighbors[new_external_processor[i]] += size;
+    }
+
+    // println!("rank={}, num_recv_neighbors={}", rank, num_recv_neighbors);
+    // println!("rank={}, tmp_neighbors={:?}", rank, &tmp_neighbors);
+
+    // sum over all processors all the tmp_neighbors arrays //
+    world.all_reduce_into(&tmp_neighbors, &mut tmp_buffer, SystemOperation::sum());
+
+    // decode the combined 'tmp_neighbors' (stored in tmp_buffer)
+    // array from all the processors
+    let num_send_neighbors = tmp_buffer[rank] % size;
+    // decode 'tmp_buffer[rank] to deduce total number of elements
+    // we must send
+    let total_to_be_sent = (tmp_buffer[rank] - num_send_neighbors) / size;
+
+    // println!("rank={}, num_send_neighbors={}", rank, num_send_neighbors);
+    // println!("rank={}, total_to_be_sent={}", rank, total_to_be_sent);
+    // println!("rank={}, tmp_buffer={:?}", rank, &tmp_buffer);
+
+    // Check to see if we have enough workspace allocated.  This could be
+    // dynamically modified, but let's keep it simple for now...
+
+    if num_send_neighbors > MAX_NUM_MESSAGES {
+        panic!("Must increase `MAX_NUM_MESSAGES` to at least {num_send_neighbors}");
+    }
+    if total_to_be_sent > MAX_EXTERNAL {
+        panic!("Must increase `MAX_EXTERNAL` to at least {total_to_be_sent}");
+    }
+
+    // TODO: Only needed in debug mode? Also add timers
+    world.barrier();
+
+    /////////////////////////////////////////////////////////////////////////
     //
-    // for i in 0..num_external {
-    //     if (tmp_neighbors[new_external_processor[i]] == 0) {
-    //         num_recv_neighbors += 1;
-    //         tmp_neighbors[new_external_processor[i]] = 1;
-    //     }
-    //     tmp_neighbors[new_external_processor[i]] += size;
-    // }
+    // Make a list of the neighbors that will send information to update our
+    // external elements (in the order that we will receive this information).
     //
-    // // sum over all processors all the tmp_neighbors arrays //
-    // world.all_reduce_into(
-    //     &tmp_neighbors,
-    //     &mut tmp_buffer,
-    //     SystemOperation::sum()
-    // );
-    //
-    // // decode the combined 'tmp_neighbors' (stored in tmp_buffer)
-    // // array from all the processors
-    // let num_send_neighbors = tmp_buffer[rank] % size;
-    // // decode 'tmp_buffer[rank] to deduce total number of elements
-    // // we must send
-    // let total_to_be_sent = (tmp_buffer[rank] - num_send_neighbors) / size;
-    //
-    // // Check to see if we have enough workspace allocated.  This could be
-    // // dynamically modified, but let's keep it simple for now...
-    //
-    // if num_send_neighbors > MAX_NUM_MESSAGES {
-    //     panic!("Must increase `MAX_NUM_MESSAGES` to at least {num_send_neighbors}");
-    // }
-    // if total_to_be_sent > MAX_EXTERNAL {
-    //     panic!("Must increase `MAX_EXTERNAL` to at least {total_to_be_sent}");
-    // }
-    //
-    // // TODO: Only needed in debug mode?
-    // world.barrier();
-    //
-    // /////////////////////////////////////////////////////////////////////////
-    // //
-    // // Make a list of the neighbors that will send information to update our
-    // // external elements (in the order that we will receive this information).
-    // //
-    // /////////////////////////////////////////////////////////////////////////
-    //
-    // let mut recv_list = vec![new_external_processor[0]];
-    // for i in 1..num_external {
-    //     if new_external_processor[i-1] != new_external_processor[i] {
-    //         recv_list.push(new_external_processor[i]);
-    //     }
-    // }
-    //
-    // // Send a 0 length message to each of our recv neighbors
-    // let mut send_list = vec![0; num_send_neighbors];
-    //
-    // // first post receives, these are immediate receives
-    // // Do not wait for result to come, will do that at the
-    // // wait call below.
-    //
-    // // Construct the requests (immediate_receive)
-    // for i in 0..num_send_neighbors {
-    //     // p2p::immediate_receive_into(
-    //     //     &tmp_buffer[i], 1
-    //     // )
-    // }
-    //
-    // // Send the messages
+    /////////////////////////////////////////////////////////////////////////
+
+    let mut recv_list = vec![new_external_processor[0]];
+    for i in 1..num_external {
+        if new_external_processor[i - 1] != new_external_processor[i] {
+            recv_list.push(new_external_processor[i]);
+        }
+    }
+
+    // Send a 0 length message to each of our recv neighbors
+    let mut send_list = vec![0; num_send_neighbors];
+
+    // println!("rank={}, recv_list={:?}", rank, &recv_list);
+    // println!("rank={}, send_list={:?}", rank, &send_list);
+
+    // first post receives, these are immediate receives
+    // Do not wait for result to come, will do that at the
+    // wait call below.
+    let mpi_my_tag = 99;
+
+    // println!("rank={}, send_list={:?}", rank, &send_list);
+
     // for i in 0..num_recv_neighbors {
-    //
+    //     world
+    //         .this_process()
+    //         .send_with_tag(&tmp_buffer[i], mpi_my_tag);
     // }
-    //
-    // // Receive message from each send neighbor to construct 'send_list'.
-    //
-    //
+
+    // for i in 0..num_send_neighbors {
+    // mpi::request::scope(|scope| {
+    //     let req = world.any_process().immediate_receive_into_with_tag(
+    //         scope,
+    //         &mut tmp_buffer[i],
+    //         mpi_my_tag,
+    //     );
+    // });
+
+    // println!("rank={}, send_list={:?}", rank, &send_list);
+
+    // TODO: For loop with scope for each iter?
+    // https://github.com/rsmpi/rsmpi/blob/main/examples/immediate_multiple_requests.rs ?
+
+    let mut results: Vec<i32> = vec![0; num_send_neighbors];
+    mpi::request::multiple_scope(num_send_neighbors, |scope, coll| {
+        for mut val in results.iter_mut() {
+            // for i in 0..num_send_neighbors {
+            let req = world
+                .any_process()
+                .immediate_receive_into_with_tag(scope, val, mpi_my_tag);
+            coll.add(req);
+        }
+
+        for i in 0..num_recv_neighbors {
+            println!("rank={}, recv_list[i]={},", rank, recv_list[i]);
+            world
+                .process_at_rank(recv_list[i] as i32)
+                // .this_process()
+                .send_with_tag(&tmp_buffer[i], mpi_my_tag);
+        }
+
+        println!("HIT!");
+        let mut wait_results = vec![];
+        coll.wait_all(&mut wait_results);
+        println!("HIT 2!");
+        for (request_index, status, _) in wait_results.iter() {
+            println!(
+                "rank={}, request_index={}, status={:?}",
+                rank, request_index, status
+            );
+            send_list[*request_index] = status.source_rank();
+        }
+
+        // println!("Incomplete? {}", coll.incomplete());
+
+        // while coll.incomplete() > 0 {
+        //     println!("HIT!");
+        //     let (request_index, status, _) = coll.wait_any().unwrap();
+        //     println!(
+        //         "rank={}, request_index={}, status={:?}",
+        //         rank, request_index, status
+        //     );
+        //     send_list[request_index] = status.source_rank();
+        //     println!("HIT 2!");
+        // }
+        // println!("HIT 3!");
+    });
+    println!("HIT 4!");
+
+    println!("rank={}, send_list={:?}", rank, &send_list);
+
     // /////////////////////////////////////////////////////////////////////////
     // //
     // //  Compare the two lists. In most cases they should be the same.
