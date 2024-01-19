@@ -311,19 +311,37 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     // println!("rank={}, num_send_neighbors={},", rank, num_send_neighbors);
     // println!("rank={}, num_recv_neighbors={},", rank, num_recv_neighbors);
     assert_eq!(num_send_neighbors, num_recv_neighbors);
-    for i in 0..num_recv_neighbors {
-        let mut result = 0;
-        mpi::request::scope(|scope| {
-            let _sreq = world
-                .process_at_rank(recv_list[i] as i32)
-                .immediate_send(scope, &tmp_buffer[i]);
-            let rreq = world
-                .any_process()
-                .immediate_receive_into(scope, &mut result);
-            let recv_status = rreq.wait();
-            send_list[i] = recv_status.source_rank();
-        });
-    }
+    let i = 0;
+    // for i in 0..num_recv_neighbors {
+    let mut result = 0;
+    mpi::request::scope(|scope| {
+        println!("Hit 1");
+        let sreq = world
+            .process_at_rank(recv_list[i] as i32)
+            .immediate_send(scope, &tmp_buffer[i]);
+        println!("Hit 2");
+        let rreq = world
+            .any_process()
+            .immediate_receive_into(scope, &mut result);
+        println!("Hit 3");
+        rreq.wait();
+        loop {
+            println!("Hit 4.0");
+            match sreq.test() {
+                Ok(recv_status) => {
+                    send_list[i] = recv_status.source_rank();
+                    break;
+                }
+                Err(_) => {
+                    panic!("Loop stopped too early");
+                }
+            }
+        }
+        println!("Hit 4.1");
+        // send_list[i] = recv_status.source_rank();
+    });
+    println!("Hit 5");
+    // }
 
     // println!("rank={}, recv_list={:?},", rank, recv_list);
     // let mut results: Vec<i32> = vec![0; num_send_neighbors];
