@@ -289,26 +289,27 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
 
     // println!("rank={}, recv_list={:?},", rank, recv_list);
 
-    let x = 5;
-    let mut results: Vec<i32> = vec![0; 1]; // num_send_neighbors
-    mpi::request::multiple_scope(1, |scope, coll| {
+    let placeholder_data = 1;
+    let mut results: Vec<i32> = vec![0; num_send_neighbors];
+    mpi::request::multiple_scope(num_send_neighbors, |scope, coll| {
         for mut val in results.iter_mut() {
             let rreq = world.any_process().immediate_receive_into(scope, val);
             coll.add(rreq);
         }
 
-        for i in 0..1 {
-            // num_recv_neighbors
-            let _ = world.process_at_rank(recv_list[i] as i32).send(&x);
+        for i in 0..num_recv_neighbors {
+            let _ = world
+                .process_at_rank(recv_list[i] as i32)
+                .send(&placeholder_data);
         }
 
         while coll.incomplete() > 0 {
             let (request_index, status, _) = coll.wait_any().unwrap();
-            println!("request_index={} | {:?}", request_index, status);
+            // println!("request_index={} | {:?}", request_index, status);
             send_list[request_index] = status.source_rank();
         }
     });
-    println!("{} = {:?} ", x, results);
+    assert!(results.iter().all(|x| { *x == placeholder_data }));
 
     // println!("rank={}, recv_list={:?},", rank, recv_list);
     // let mut results: Vec<i32> = vec![0; num_send_neighbors];
@@ -370,7 +371,7 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
 
     println!("rank={}, send_list={:?}", rank, &send_list);
 
-    println!("DONE BLOCK (rank={})!", rank);
+    // println!("DONE BLOCK (rank={})!", rank);
 
     // /////////////////////////////////////////////////////////////////////////
     // //
