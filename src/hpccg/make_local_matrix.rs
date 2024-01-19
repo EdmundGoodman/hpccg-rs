@@ -289,16 +289,26 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
 
     // println!("rank={}, recv_list={:?},", rank, recv_list);
 
-    let x = std::f32::consts::PI;
-    let mut y: f32 = 0.0;
+    let x = 5;
+    let mut results: Vec<i32> = vec![0; 1]; // num_send_neighbors
+    mpi::request::multiple_scope(1, |scope, coll| {
+        for mut val in results.iter_mut() {
+            let rreq = world.any_process().immediate_receive_into(scope, val);
+            coll.add(rreq);
+        }
 
-    let i = 0;
-    mpi::request::scope(|scope| {
-        let rreq = world.any_process().immediate_receive_into(scope, &mut y);
-        let _ = world.process_at_rank(recv_list[i] as i32).send(&x);
-        rreq.wait();
+        for i in 0..1 {
+            // num_recv_neighbors
+            let _ = world.process_at_rank(recv_list[i] as i32).send(&x);
+        }
+
+        while coll.incomplete() > 0 {
+            let (request_index, status, _) = coll.wait_any().unwrap();
+            println!("request_index={} | {:?}", request_index, status);
+            send_list[request_index] = status.source_rank();
+        }
     });
-    println!("{} = {} ", x, y);
+    println!("{} = {:?} ", x, results);
 
     // println!("rank={}, recv_list={:?},", rank, recv_list);
     // let mut results: Vec<i32> = vec![0; num_send_neighbors];
@@ -359,6 +369,8 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     // println!("HIT 4!");
 
     println!("rank={}, send_list={:?}", rank, &send_list);
+
+    println!("DONE BLOCK (rank={})!", rank);
 
     // /////////////////////////////////////////////////////////////////////////
     // //
