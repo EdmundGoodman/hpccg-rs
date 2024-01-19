@@ -1,7 +1,6 @@
 use super::SparseMatrix;
 
 use mpi::collective::SystemOperation;
-use mpi::request::WaitGuard;
 use mpi::traits::*;
 use std::collections::HashMap;
 
@@ -266,7 +265,11 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     //
     /////////////////////////////////////////////////////////////////////////
 
-    let mut recv_list = vec![new_external_processor[0]];
+    let mut recv_list = vec![];
+    // TODO: This is a bug in the actual version! If n = 1, index out of bounds
+    if num_external > 0 {
+        recv_list.push(new_external_processor[0]);
+    }
     for i in 1..num_external {
         if new_external_processor[i - 1] != new_external_processor[i] {
             recv_list.push(new_external_processor[i]);
@@ -284,64 +287,18 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     // wait call below.
     let mpi_my_tag = 99;
 
-    // println!("rank={}, send_list={:?}", rank, &send_list);
+    // println!("rank={}, recv_list={:?},", rank, recv_list);
 
-    // for i in 0..num_recv_neighbors {
-    //     world
-    //         .this_process()
-    //         .send_with_tag(&tmp_buffer[i], mpi_my_tag);
-    // }
+    let x = std::f32::consts::PI;
+    let mut y: f32 = 0.0;
 
-    // for i in 0..num_send_neighbors {
-    // mpi::request::scope(|scope| {
-    //     let req = world.any_process().immediate_receive_into_with_tag(
-    //         scope,
-    //         &mut tmp_buffer[i],
-    //         mpi_my_tag,
-    //     );
-    // });
-
-    // println!("rank={}, send_list={:?}", rank, &send_list);
-
-    // TODO: For loop with scope for each iter?
-    // https://github.com/rsmpi/rsmpi/blob/main/examples/immediate_multiple_requests.rs ?
-
-    println!("rank={}, recv_list={:?},", rank, recv_list);
-
-    // println!("rank={}, num_send_neighbors={},", rank, num_send_neighbors);
-    // println!("rank={}, num_recv_neighbors={},", rank, num_recv_neighbors);
-    assert_eq!(num_send_neighbors, num_recv_neighbors);
     let i = 0;
-    // for i in 0..num_recv_neighbors {
-    let mut result = 0;
     mpi::request::scope(|scope| {
-        println!("Hit 1");
-        let sreq = world
-            .process_at_rank(recv_list[i] as i32)
-            .immediate_send(scope, &tmp_buffer[i]);
-        println!("Hit 2");
-        let rreq = world
-            .any_process()
-            .immediate_receive_into(scope, &mut result);
-        println!("Hit 3");
+        let rreq = world.any_process().immediate_receive_into(scope, &mut y);
+        let _ = world.process_at_rank(recv_list[i] as i32).send(&x);
         rreq.wait();
-        loop {
-            println!("Hit 4.0");
-            match sreq.test() {
-                Ok(recv_status) => {
-                    send_list[i] = recv_status.source_rank();
-                    break;
-                }
-                Err(_) => {
-                    panic!("Loop stopped too early");
-                }
-            }
-        }
-        println!("Hit 4.1");
-        // send_list[i] = recv_status.source_rank();
     });
-    println!("Hit 5");
-    // }
+    println!("{} = {} ", x, y);
 
     // println!("rank={}, recv_list={:?},", rank, recv_list);
     // let mut results: Vec<i32> = vec![0; num_send_neighbors];
@@ -386,32 +343,18 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     //             // .this_process()
     //             .send_with_tag(&tmp_buffer[i], mpi_my_tag);
     //     }
-
+    // println!("Incomplete? {}", coll.incomplete());
+    // while coll.incomplete() > 0 {
     //     println!("HIT!");
-    //     let mut wait_results = vec![];
-    //     coll.wait_all(&mut wait_results);
+    //     let (request_index, status, _) = coll.wait_any().unwrap();
+    //     println!(
+    //         "rank={}, request_index={}, status={:?}",
+    //         rank, request_index, status
+    //     );
+    //     send_list[request_index] = status.source_rank();
     //     println!("HIT 2!");
-    //     for (request_index, status, _) in wait_results.iter() {
-    //         println!(
-    //             "rank={}, request_index={}, status={:?}",
-    //             rank, request_index, status
-    //         );
-    //         send_list[*request_index] = status.source_rank();
-    //     }
-
-    //     // println!("Incomplete? {}", coll.incomplete());
-
-    //     // while coll.incomplete() > 0 {
-    //     //     println!("HIT!");
-    //     //     let (request_index, status, _) = coll.wait_any().unwrap();
-    //     //     println!(
-    //     //         "rank={}, request_index={}, status={:?}",
-    //     //         rank, request_index, status
-    //     //     );
-    //     //     send_list[request_index] = status.source_rank();
-    //     //     println!("HIT 2!");
-    //     // }
-    //     // println!("HIT 3!");
+    // }
+    // println!("HIT 3!");
     // });
     // println!("HIT 4!");
 
