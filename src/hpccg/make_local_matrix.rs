@@ -282,129 +282,82 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     // println!("rank={}, recv_list={:?}", rank, &recv_list);
     // println!("rank={}, send_list={:?}", rank, &send_list);
 
-    // first post receives, these are immediate receives
-    // Do not wait for result to come, will do that at the
-    // wait call below.
     let mpi_my_tag = 99;
-
-    // println!("rank={}, recv_list={:?},", rank, recv_list);
 
     let placeholder_data = 1;
     let mut results: Vec<i32> = vec![0; num_send_neighbors];
     mpi::request::multiple_scope(num_send_neighbors, |scope, coll| {
+        // first post receives, these are immediate receives
+        // Do not wait for result to come, will do that at the
+        // wait call below.
         for mut val in results.iter_mut() {
-            let rreq = world.any_process().immediate_receive_into(scope, val);
+            let rreq = world
+                .any_process()
+                .immediate_receive_into_with_tag(scope, val, mpi_my_tag);
             coll.add(rreq);
         }
 
+        // send messages
         for i in 0..num_recv_neighbors {
             let _ = world
                 .process_at_rank(recv_list[i] as i32)
-                .send(&placeholder_data);
+                .send_with_tag(&placeholder_data, mpi_my_tag);
+            // WE CANNOT USE tmp_buffer here?!?!? The bindings explode...
+            // .send(&tmp_buffer[i]);
         }
 
+        // Receive message from each send neighbor to construct 'send_list'.
         while coll.incomplete() > 0 {
             let (request_index, status, _) = coll.wait_any().unwrap();
-            // println!("request_index={} | {:?}", request_index, status);
-            send_list[request_index] = status.source_rank();
+            // TODO: Make send/recv_list typed on Rank typedef?
+            send_list[request_index] = status.source_rank() as usize;
         }
     });
     assert!(results.iter().all(|x| { *x == placeholder_data }));
 
-    // println!("rank={}, recv_list={:?},", rank, recv_list);
-    // let mut results: Vec<i32> = vec![0; num_send_neighbors];
-    // mpi::request::multiple_scope(num_send_neighbors, |scope, coll| {
-    //     for mut val in results.iter_mut() {
-    //         let rreq = world.any_process().immediate_receive_into(scope, val);
-    //         coll.add(rreq);
-    //     }
+    // println!("rank={}, send_list={:?}", rank, &send_list);
 
-    //     for i in 0..num_recv_neighbors {
-    //         let _sreq = world
-    //             .process_at_rank(recv_list[i] as i32)
-    //             .send(&tmp_buffer[0]);
-    //     }
-
-    //     println!("Incomplete? {}", coll.incomplete());
-    //     while coll.incomplete() > 0 {
-    //         let (request_index, status, _) = coll.wait_any().expect("MPI_Wait error");
-    //         println!(
-    //             "rank={}, request_index={}, status={:?}",
-    //             rank, request_index, status
-    //         );
-    //         send_list[request_index] = status.source_rank();
-    //     }
-    //     println!("Hit");
-    // });
-
-    // let mut results: Vec<i32> = vec![0; num_send_neighbors];
-    // mpi::request::multiple_scope(num_send_neighbors, |scope, coll| {
-    //     for mut val in results.iter_mut() {
-    //         // for i in 0..num_send_neighbors {
-    //         let req = world
-    //             .any_process()
-    //             .immediate_receive_into_with_tag(scope, val, mpi_my_tag);
-    //         coll.add(req);
-    //     }
-
-    //     for i in 0..num_recv_neighbors {
-    //         println!("rank={}, recv_list[i]={},", rank, recv_list[i]);
-    //         world
-    //             .process_at_rank(recv_list[i] as i32)
-    //             // .this_process()
-    //             .send_with_tag(&tmp_buffer[i], mpi_my_tag);
-    //     }
-    // println!("Incomplete? {}", coll.incomplete());
-    // while coll.incomplete() > 0 {
-    //     println!("HIT!");
-    //     let (request_index, status, _) = coll.wait_any().unwrap();
-    //     println!(
-    //         "rank={}, request_index={}, status={:?}",
-    //         rank, request_index, status
-    //     );
-    //     send_list[request_index] = status.source_rank();
-    //     println!("HIT 2!");
-    // }
-    // println!("HIT 3!");
-    // });
-    // println!("HIT 4!");
-
-    println!("rank={}, send_list={:?}", rank, &send_list);
-
-    // println!("DONE BLOCK (rank={})!", rank);
-
-    // /////////////////////////////////////////////////////////////////////////
-    // //
-    // //  Compare the two lists. In most cases they should be the same.
-    // //  However, if they are not then add new entries to the recv list
-    // //  that are in the send list (but not already in the recv list).
-    // //
-    // /////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
     //
-    // for j in 0..num_send_neighbors {
-    //     let mut found = 0;
-    //     for i in 0..num_recv_neighbors {
-    //         if recv_list[i] == send_list[j] {
-    //             found = 1;
-    //             break;  // TODO: This is really an any pattern, could be an iterator
-    //         }
-    //     }
+    //  Compare the two lists. In most cases they should be the same.
+    //  However, if they are not then add new entries to the recv list
+    //  that are in the send list (but not already in the recv list).
     //
-    //     if found == 0 {
-    //         if DEBUG || DEBUG_DETAILS {
-    //             println!("Processor {rank} of {size}: recv_list[{num_recv_neighbors}] = {}", send_list[j]);
-    //         }
-    //         recv_list[num_recv_neighbors] == send_list[j];
-    //         num_recv_neighbors += 1;
-    //     }
-    // }
-    //
-    // let num_send_neighbors = num_recv_neighbors;
-    // if num_send_neighbors > MAX_NUM_MESSAGES {
-    //     // TODO: Is this wrong in the source code?!?!?!?
-    //     panic!("Must increase `MAX_NUM_MESSAGES` from {MAX_NUM_MESSAGES}");
-    // }
-    //
+    /////////////////////////////////////////////////////////////////////////
+
+    // println!("rank={}, num_recv_neighbors={}", rank, num_recv_neighbors);
+    // println!("rank={}, recv_list={:?}", rank, &recv_list);
+
+    for j in 0..num_send_neighbors {
+        let mut found = 0;
+        for i in 0..num_recv_neighbors {
+            if recv_list[i] == send_list[j] {
+                found = 1;
+                break; // TODO: This is really an any pattern, could be an iterator
+            }
+        }
+
+        if found == 0 {
+            if DEBUG || DEBUG_DETAILS {
+                println!(
+                    "Processor {rank} of {size}: recv_list[{num_recv_neighbors}] = {}",
+                    send_list[j]
+                );
+            }
+            recv_list[num_recv_neighbors] = send_list[j];
+            num_recv_neighbors += 1;
+        }
+    }
+
+    // println!("rank={}, num_recv_neighbors={}", rank, num_recv_neighbors);
+    // println!("rank={}, recv_list={:?}", rank, &recv_list);
+
+    let num_send_neighbors = num_recv_neighbors;
+    if num_send_neighbors > MAX_NUM_MESSAGES {
+        // TODO: Is this wrong in the source code?!?!?!?
+        panic!("Must increase `MAX_NUM_MESSAGES` from {MAX_NUM_MESSAGES}");
+    }
+
     // /////////////////////////////////////////////////////////////////////////
     // // Start filling HPC_Sparse_Matrix struct
     // /////////////////////////////////////////////////////////////////////////
