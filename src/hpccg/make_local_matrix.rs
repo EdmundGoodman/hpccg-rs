@@ -8,7 +8,7 @@ const MAX_EXTERNAL: usize = 100000;
 const MAX_NUM_MESSAGES: usize = 500;
 const MAX_NUM_NEIGHBORS: usize = MAX_NUM_MESSAGES;
 
-const DEBUG: bool = true;
+const DEBUG: bool = false;
 const DEBUG_DETAILS: bool = false;
 
 pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
@@ -135,8 +135,6 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     // set of index numbers in the sequence (ie. elements updated by the same node
     // have consecutive indices).
     ////////////////////////////////////////////////////////////////////////////
-
-    dbg!(num_external);
 
     let mut count = matrix.local_nrow as i32;
     matrix.external_local_index = vec![-1; num_external];
@@ -358,22 +356,26 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         panic!("Must increase `MAX_NUM_MESSAGES` from {MAX_NUM_MESSAGES}");
     }
 
-    // /////////////////////////////////////////////////////////////////////////
-    // // Start filling HPC_Sparse_Matrix struct
-    // /////////////////////////////////////////////////////////////////////////
-    //
-    // matrix.total_to_be_sent = total_to_be_sent;
-    // // matrix.elements_to_send =
-    // let mut elements_to_send = vec![0; total_to_be_sent];
-    //
-    // // Create 'new_external' which explicitly put the external elements in the
-    // // order given by 'external_local_index'
-    //
-    // let mut new_external = vec![0; num_external];
-    // for i in 0..num_external {
-    //     new_external[external_local_index[i] - matrix.local_nrow] = external_index[i];
-    // }
-    //
+    /////////////////////////////////////////////////////////////////////////
+    // Start filling HPC_Sparse_Matrix struct
+    /////////////////////////////////////////////////////////////////////////
+
+    matrix.total_to_be_sent = total_to_be_sent;
+    // matrix.elements_to_send =
+    let mut elements_to_send = vec![0; total_to_be_sent];
+
+    // Create 'new_external' which explicitly put the external elements in the
+    // order given by 'external_local_index'
+
+    let mut new_external = vec![0; num_external];
+    for i in 0..num_external {
+        new_external[matrix.external_local_index[i] as usize - matrix.local_nrow] =
+            matrix.external_index[i];
+    }
+
+    // println!("rank={}, num_external={}", rank, num_external);
+    // println!("rank={}, new_external={:?}", rank, &new_external);
+
     // /////////////////////////////////////////////////////////////////////////
     // //
     // // Send each processor the global index list of the external elements in the
