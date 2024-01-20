@@ -1,6 +1,7 @@
 use super::SparseMatrix;
 
 use mpi::collective::SystemOperation;
+use mpi::point_to_point::ReceiveFuture;
 use mpi::traits::*;
 use std::collections::HashMap;
 
@@ -216,7 +217,7 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     let mut tmp_neighbors = vec![0; size];
 
     let mut num_recv_neighbors = 0;
-    let mut length = 1;
+    // let mut length = 1; // TODO: This is moved down and made not immutable?
 
     for i in 0..num_external {
         if (tmp_neighbors[new_external_processor[i]] == 0) {
@@ -281,39 +282,30 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     // println!("rank={}, send_list={:?}", rank, &send_list);
 
     let mpi_my_tag = 99;
+    // TODO: Are num_send_neighbors always the same?
+    // TODO: Note that `send` cannot send `usize`, only `i32`
+    // TODO: Make send/recv_list typed on Rank typedef?
 
     let placeholder_data = 1;
-    let mut results: Vec<i32> = vec![0; num_send_neighbors];
-    mpi::request::multiple_scope(num_send_neighbors, |scope, coll| {
-        // first post receives, these are immediate receives
-        // Do not wait for result to come, will do that at the
-        // wait call below.
-        for mut val in results.iter_mut() {
-            let rreq = world
-                .any_process()
-                .immediate_receive_into_with_tag(scope, val, mpi_my_tag);
-            coll.add(rreq);
-        }
+    let mut result_futures: Vec<ReceiveFuture<i32>> = vec![];
+    for _ in 0..num_send_neighbors {
+        result_futures.push(world.any_process().immediate_receive_with_tag(mpi_my_tag));
+    }
 
-        // send messages
-        for i in 0..num_recv_neighbors {
-            let _ = world
-                .process_at_rank(recv_list[i] as i32)
-                .send_with_tag(&placeholder_data, mpi_my_tag);
-            // WE CANNOT USE tmp_buffer here?!?!? The bindings explode...
-            // .send(&tmp_buffer[i]);
-        }
+    for i in 0..num_recv_neighbors {
+        let _ = world
+            .process_at_rank(recv_list[i] as i32)
+            .send_with_tag(&placeholder_data, mpi_my_tag);
+    }
 
-        // Receive message from each send neighbor to construct 'send_list'.
-        while coll.incomplete() > 0 {
-            let (request_index, status, _) = coll.wait_any().unwrap();
-            // TODO: Make send/recv_list typed on Rank typedef?
-            send_list[request_index] = status.source_rank() as usize;
-        }
-    });
-    assert!(results.iter().all(|x| { *x == placeholder_data }));
+    for (i, result_future) in result_futures.into_iter().enumerate() {
+        // for i in 0..num_send_neighbors {
+        let (msg, status) = result_future.get();
+        assert_eq!(msg, placeholder_data);
+        send_list[i] = status.source_rank() as usize;
+    }
 
-    // println!("rank={}, send_list={:?}", rank, &send_list);
+    println!("rank={}, send_list={:?}", rank, &send_list);
 
     /////////////////////////////////////////////////////////////////////////
     //
@@ -376,47 +368,97 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     // println!("rank={}, num_external={}", rank, num_external);
     // println!("rank={}, new_external={:?}", rank, &new_external);
 
-    // /////////////////////////////////////////////////////////////////////////
-    // //
-    // // Send each processor the global index list of the external elements in the
-    // // order that I will want to receive them when updating my external elements
-    // //
-    // /////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
     //
-    // let mut lengths = Vec::with_capacity(num_recv_neighbors);
+    // Send each processor the global index list of the external elements in the
+    // order that I will want to receive them when updating my external elements
     //
-    // for i in 0..num_recv_neighbors {
-    //     let partner = recv_list[i];
-    //     // world.reci
-    // }
-    //
+    /////////////////////////////////////////////////////////////////////////
+
+    // let mpi_my_tag = mpi_my_tag + 1;
+
+    // // TODO: MAX_NUM_NEIGHBORS etc. can be replaced with runtime values?
     // matrix.neighbors = Vec::with_capacity(MAX_NUM_NEIGHBORS);
     // matrix.recv_length = Vec::with_capacity(MAX_NUM_NEIGHBORS);
-    // matrix.send_length = Vec::with_capacity(MAX_NUM_NEIGHBORS);
-    //
-    // let mut j = 0;
-    // for i in 0..num_recv_neighbors {
-    //     let start = j;
-    //     let mut newlength: usize = 0;
-    //
-    //     while (j < num_external) && (new_external_processor[j] == recv_list[i]) {
-    //         newlength += 1;
-    //         j += 1;
-    //         if j == num_external {
-    //             break;
-    //         }
+    // matrix.send_length = vec![0; num_recv_neighbors];
+
+    // println!("HIT 1");
+
+    // let mut lengths: Vec<i32> = vec![0; num_recv_neighbors];
+    // mpi::request::multiple_scope(num_recv_neighbors, |scope, coll| {
+    //     println!("HIT 2");
+    //     // First post receives
+    //     // for (val, partner) in lengths.iter_mut().zip(recv_list.iter()) {
+    //     //     let rreq = world
+    //     //         .process_at_rank(*partner as i32)
+    //     //         .immediate_receive_into_with_tag(scope, val, mpi_my_tag);
+    //     //     coll.add(rreq);
+    //     // }
+    //     // for i in 0..num_recv_neighbors {
+    //     //     let rreq = world
+    //     //         .process_at_rank(recv_list[i] as i32)
+    //     //         .immediate_receive_into_with_tag(scope, &mut lengths[i], mpi_my_tag);
+    //     //     coll.add(rreq);
+    //     // }
+    //     let mut i = 0;
+    //     for val in lengths.iter_mut() {
+    //         let rreq = world
+    //             .process_at_rank(recv_list[i] as i32)
+    //             .immediate_receive_into_with_tag(scope, val, mpi_my_tag);
+    //         coll.add(rreq);
+    //         i += 1;
     //     }
-    //
-    //     matrix.recv_length.push(newlength);
-    //     matrix.neighbors.push(recv_list[i]);
-    //
-    //     length = j - start;
-    //     // MPI send length
-    // }
-    //
-    // // Wait for the sent lengths
-    //
-    //
+    //     println!("HIT 3");
+
+    //     let mut j = 0;
+    //     for i in 0..num_recv_neighbors {
+    //         let start = j;
+    //         let mut newlength: usize = 0;
+
+    //         // go through list of external elements until updating
+    //         // processor changes
+    //         while (j < num_external) && (new_external_processor[j] == recv_list[i]) {
+    //             newlength += 1;
+    //             j += 1;
+    //             if j == num_external {
+    //                 break;
+    //             }
+    //         }
+
+    //         matrix.recv_length.push(newlength);
+    //         matrix.neighbors.push(recv_list[i]);
+
+    //         let length = (j - start) as i32;
+    //         // MPI send length
+    //         let _ = world
+    //             .process_at_rank(recv_list[i] as i32)
+    //             .send_with_tag(&length, mpi_my_tag);
+    //         // .send_with_tag(&placeholder_data, mpi_my_tag);
+    //     }
+    //     println!("HIT 4");
+
+    //     // Complete the receives of the number of externals
+    //     while coll.incomplete() > 0 {
+    //         println!("HIT 4.1 | {}", coll.incomplete());
+    //         // TODO: This waits for a specific request :sweat_smile:
+    //         let (request_index, _, _) = coll.wait_any().unwrap();
+    //         // TODO: Make send/recv_list typed on Rank typedef?
+    //         matrix.send_length[request_index] = lengths[request_index] as usize;
+    //     }
+    //     println!("HIT 5");
+    // });
+
+    // println!("rank={}, lengths={:?}", rank, &lengths);
+    // // println!("rank={}, matrix.neighbors={:?}", rank, &matrix.neighbors);
+    // // println!(
+    // //     "rank={}, matrix.recv_length={:?}",
+    // //     rank, &matrix.recv_length
+    // // );
+    // // println!(
+    // //     "rank={}, matrix.send_length={:?}",
+    // //     rank, &matrix.send_length
+    // // );
+
     // ///////////////////////////////////////////////////////////////////
     // // Build "elements_to_send" list.  These are the x elements I own
     // // that need to be sent to other processors.
