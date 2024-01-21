@@ -454,10 +454,12 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
 
     // println!("rank={}, result_slices={:?}", rank, &result_slices);
 
+    let mut all_data_to_send = vec![];
     mpi::request::multiple_scope(num_recv_neighbors, |scope, coll| {
         for (i, slice) in result_slices.iter_mut().enumerate() {
             let rreq = world
                 .process_at_rank(matrix.neighbors[i] as i32)
+                // .any_process()
                 .immediate_receive_into_with_tag(scope, slice, mpi_my_tag);
             coll.add(rreq);
         }
@@ -479,26 +481,39 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
                 }
             }
 
-            println!(
-                "rank={}, start={}, j={}, target={}",
-                rank, start, j, recv_list[i]
-            );
-
             // TODO: The second send is somehow dropped
-            let data_to_send = new_external[start..j - start]
+            let data_to_send = new_external[start..j]
                 .iter()
                 .map(|&x| x as i32)
                 .collect::<Vec<i32>>();
+
+            // println!(
+            //     "rank={}, start={}, j={}, num_external={}, size={}, target={}, data={:?}",
+            //     rank,
+            //     start,
+            //     j,
+            //     num_external,
+            //     new_external.len(),
+            //     recv_list[i],
+            //     data_to_send
+            // );
+
+            all_data_to_send.push(data_to_send);
             world
                 .process_at_rank(recv_list[i] as i32)
-                .send_with_tag(&data_to_send, mpi_my_tag);
+                .send_with_tag(&all_data_to_send[i], mpi_my_tag);
         }
 
         while coll.incomplete() > 0 {
             let (request_index, status, _) = coll.wait_any().expect("MPI_Wait error");
-            println!("request_index={} | {:?}", request_index, status);
+            // println!(
+            //     "rank={}, request_index={} | {:?}",
+            //     rank, request_index, status
+            // );
         }
     });
+
+    // println!("rank={}, result_slices={:?}", rank, result_slices);
 
     // replace global indices by local indices
     for slice in result_slices.iter() {
