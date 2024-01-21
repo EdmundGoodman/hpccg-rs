@@ -34,7 +34,7 @@ pub struct SparseMatrix {
     pub external_index: Vec<usize>,
     pub external_local_index: Vec<i32>,
     pub total_to_be_sent: usize,
-    pub elements_to_send: Vec<usize>,
+    pub elements_to_send: Vec<i32>,
     pub neighbors: Vec<usize>,
     pub recv_length: Vec<usize>,
     pub send_length: Vec<usize>,

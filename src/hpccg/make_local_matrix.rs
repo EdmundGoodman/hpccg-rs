@@ -355,7 +355,7 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     matrix.total_to_be_sent = total_to_be_sent;
     // matrix.elements_to_send =
     // let mut elements_to_send = vec![0; total_to_be_sent];
-    let mut elements_to_send = vec![];
+    // let mut elements_to_send = vec![];
 
     // Create 'new_external' which explicitly put the external elements in the
     // order given by 'external_local_index'
@@ -425,7 +425,7 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     }
     // println!("]");
 
-    println!("rank={}, matrix.neighbors={:?}", rank, &matrix.neighbors);
+    // println!("rank={}, matrix.neighbors={:?}", rank, &matrix.neighbors);
     // println!(
     //     "rank={}, matrix.recv_length={:?}",
     //     rank, &matrix.recv_length
@@ -520,11 +520,11 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         for &item in slice {
             let lhs = item as i32;
             let rhs = matrix.start_row as i32;
-            elements_to_send.push(lhs - rhs);
+            matrix.elements_to_send.push(lhs - rhs);
         }
     }
 
-    println!("rank={}, elements_to_send={:?}", rank, &elements_to_send);
+    // println!("rank={}, elements_to_send={:?}", rank, &elements_to_send);
 
     // #[derive(Equivalence, PartialEq, Debug)]
     // struct MpiSendVec(Vec<i32>);
@@ -586,9 +586,15 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     //     elements_to_send[i] -= matrix.start_row;
     // }
 
-    // ////////////////
-    // // Finish up !!
-    // ////////////////
+    ////////////////
+    // Finish up !!
+    ////////////////
+
+    matrix.num_send_neighbors = num_send_neighbors;
+    matrix.local_ncol = matrix.local_nrow + num_external;
+    matrix.send_buffer = vec![0.0; matrix.total_to_be_sent];
+
+    // println!("{:?}", matrix);
 }
 
 //
