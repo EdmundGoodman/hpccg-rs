@@ -354,7 +354,8 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
 
     matrix.total_to_be_sent = total_to_be_sent;
     // matrix.elements_to_send =
-    let mut elements_to_send = vec![0; total_to_be_sent];
+    // let mut elements_to_send = vec![0; total_to_be_sent];
+    let mut elements_to_send = vec![];
 
     // Create 'new_external' which explicitly put the external elements in the
     // order given by 'external_local_index'
@@ -424,7 +425,7 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     }
     // println!("]");
 
-    // println!("rank={}, matrix.neighbors={:?}", rank, &matrix.neighbors);
+    println!("rank={}, matrix.neighbors={:?}", rank, &matrix.neighbors);
     // println!(
     //     "rank={}, matrix.recv_length={:?}",
     //     rank, &matrix.recv_length
@@ -434,26 +435,105 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     //     rank, &matrix.send_length
     // );
 
-    // ///////////////////////////////////////////////////////////////////
-    // // Build "elements_to_send" list.  These are the x elements I own
-    // // that need to be sent to other processors.
-    // ///////////////////////////////////////////////////////////////////
-    //
-    // let mut j = 0;
+    ///////////////////////////////////////////////////////////////////
+    // Build "elements_to_send" list.  These are the x elements I own
+    // that need to be sent to other processors.
+    ///////////////////////////////////////////////////////////////////
+
+    let mpi_my_tag = mpi_my_tag + 1;
+
+    // let mut result_slices: Vec<&mut Vec<i32>> = (0..num_recv_neighbors)
+    //     .map(|i| vec![0; matrix.send_length[i]])
+    //     .collect();
+
+    let mut result_slices = vec![];
+    for i in 0..num_recv_neighbors {
+        let mut slice = vec![0; matrix.send_length[i]];
+        result_slices.push(slice);
+    }
+
+    // println!("rank={}, result_slices={:?}", rank, &result_slices);
+
+    mpi::request::multiple_scope(num_recv_neighbors, |scope, coll| {
+        for (i, slice) in result_slices.iter_mut().enumerate() {
+            let rreq = world
+                .process_at_rank(matrix.neighbors[i] as i32)
+                .immediate_receive_into_with_tag(scope, slice, mpi_my_tag);
+            coll.add(rreq);
+        }
+
+        let mut j = 0;
+        for i in 0..num_recv_neighbors {
+            let start = j;
+            let mut newlength: usize = 0;
+
+            // Go through list of external elements
+            // until updating processor changes.  This is redundant, but
+            // saves us from recording this information.
+
+            while (j < num_external) && (new_external_processor[j] == recv_list[i]) {
+                newlength += 1;
+                j += 1;
+                if j == num_external {
+                    break;
+                }
+            }
+
+            println!(
+                "rank={}, start={}, j={}, target={}",
+                rank, start, j, recv_list[i]
+            );
+
+            // TODO: The second send is somehow dropped
+            let data_to_send = new_external[start..j - start]
+                .iter()
+                .map(|&x| x as i32)
+                .collect::<Vec<i32>>();
+            world
+                .process_at_rank(recv_list[i] as i32)
+                .send_with_tag(&data_to_send, mpi_my_tag);
+        }
+
+        while coll.incomplete() > 0 {
+            let (request_index, status, _) = coll.wait_any().expect("MPI_Wait error");
+            println!("request_index={} | {:?}", request_index, status);
+        }
+    });
+
+    // replace global indices by local indices
+    for slice in result_slices.iter() {
+        for &item in slice {
+            let lhs = item as i32;
+            let rhs = matrix.start_row as i32;
+            elements_to_send.push(lhs - rhs);
+        }
+    }
+
+    println!("rank={}, elements_to_send={:?}", rank, &elements_to_send);
+
+    // #[derive(Equivalence, PartialEq, Debug)]
+    // struct MpiSendVec(Vec<i32>);
+
+    // // let mut j = 0;
+    // let mut elements_to_send_futures: Vec<ReceiveFuture<MpiSendVec>> = vec![];
     // for i in 0..num_recv_neighbors {
-    //     // mpi immediate receive
-    //     j += matrix.send_length[i];
+    //     elements_to_send_futures.push(
+    //         world
+    //             .process_at_rank(matrix.send_length[i] as i32)
+    //             .immediate_receive_with_tag(mpi_my_tag),
+    //     );
+    //     // j += matrix.send_length[i];
     // }
-    //
+
     // let mut j = 0;
     // for i in 0..num_recv_neighbors {
     //     let start = j;
     //     let mut newlength: usize = 0;
-    //
+
     //     // Go through list of external elements
     //     // until updating processor changes.  This is redundant, but
     //     // saves us from recording this information.
-    //
+
     //     while (j < num_external) && (new_external_processor[j] == recv_list[i]) {
     //         newlength += 1;
     //         j += 1;
@@ -461,23 +541,56 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     //             break;
     //         }
     //     }
-    //     // mpi send
+
+    //     let data_to_send = MpiSendVec(
+    //         new_external[start..j - start]
+    //             .iter()
+    //             .map(|&x| x as i32)
+    //             .collect::<Vec<i32>>(),
+    //     );
+    //     let _ = world
+    //         .process_at_rank(recv_list[i] as i32)
+    //         .send_with_tag(&data_to_send, mpi_my_tag);
     // }
-    //
-    // // wait for mpi receives
-    //
-    // for i in 0..num_recv_neighbors {
-    //     // mpi wait
+
+    // // receive from each neighbor the global index list of external elements
+
+    // let mut j = 0;
+    // print!("rank={}, lengths=[", rank);
+    // for (i, element_to_send_future) in elements_to_send_futures.into_iter().enumerate() {
+    //     let (msg, _) = element_to_send_future.get();
+    //     print!("{:?}, ", msg);
+    //     for k in 0..matrix.send_length[i] {
+    //         matrix.elements_to_send[k + j] = msg[k];
+    //     }
+    //     j += matrix.send_length[i];
     // }
-    //
+    // println!("]");
+
     // for i in 0..matrix.total_to_be_sent {
     //     elements_to_send[i] -= matrix.start_row;
     // }
-    //
+
     // ////////////////
     // // Finish up !!
     // ////////////////
 }
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 // pub fn scan_and_transform_local(
 //     matrix: &mut SparseMatrix,
