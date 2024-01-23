@@ -1,6 +1,5 @@
-use rayon::prelude::*;
-use mpi::traits::*;
 use mpi::collective::SystemOperation;
+use mpi::traits::*;
 
 /// A method to compute the dot product of two vectors.
 ///
@@ -13,17 +12,13 @@ use mpi::collective::SystemOperation;
 /// * `rhs` - The second input vector.
 pub fn ddot(_width: usize, lhs: &[f64], rhs: &[f64], world: &impl Communicator) -> f64 {
     let local_result: f64 = if std::ptr::eq(lhs, rhs) {
-        lhs.par_iter().map(|x| x * x).sum()
+        lhs.iter().map(|x| x * x).sum()
     } else {
-        lhs.par_iter().zip(rhs.par_iter()).map(|(x, y)| x * y).sum()
+        lhs.iter().zip(rhs.iter()).map(|(x, y)| x * y).sum()
     };
 
     // TODO: Add another timer
     let mut global_result = 0.0;
-    world.all_reduce_into(
-        &local_result,
-        &mut global_result,
-        SystemOperation::sum()
-    );
+    world.all_reduce_into(&local_result, &mut global_result, SystemOperation::sum());
     global_result
 }

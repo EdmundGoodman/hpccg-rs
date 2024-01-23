@@ -17,7 +17,6 @@ debug = true
 libc = "0.2.149"
 mpi = { version = "0.7.0", features = ["derive"] }
 once_cell = "1.19.0"
-rayon = "1.8.0"
 
 [dev-dependencies]
 serial_test = "*"
