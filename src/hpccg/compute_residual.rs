@@ -17,11 +17,15 @@ pub fn compute_residual(_width: usize, actual: &[f64], expected: &[f64]) -> f64 
     // }
     // residual
     // println!("actual={:?}, expected={:?}", actual, expected);
-    actual
-        .iter()
-        .zip(expected.iter())
-        .map(|(x, y)| (x - y).abs())
-        // Need to account for f64 not being totally ordered (https://stackoverflow.com/a/50308360)
-        .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"))
-        .unwrap_or(0.0)
+    if actual.iter().any(|x| x.is_nan()) {
+        f64::NAN
+    } else {
+        actual
+            .iter()
+            .zip(expected.iter())
+            .map(|(x, y)| (x - y).abs())
+            // Need to account for f64 not being totally ordered (https://stackoverflow.com/a/50308360)
+            .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"))
+            .unwrap_or(0.0)
+    }
 }

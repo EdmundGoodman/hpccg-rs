@@ -51,12 +51,12 @@ pub fn exchange_externals(
                     mpi_my_tag,
                 );
 
-            println!(
-                "rank={}, target={}, data={:?}",
-                rank,
-                matrix.neighbors[i],
-                &matrix.send_buffer[start..start + matrix.send_length[i]]
-            );
+            // println!(
+            //     "rank={}, target={}, data={:?}",
+            //     rank,
+            //     matrix.neighbors[i],
+            //     &matrix.send_buffer[start..start + matrix.send_length[i]]
+            // );
             start += matrix.send_length[i];
         }
 
@@ -65,23 +65,25 @@ pub fn exchange_externals(
         }
     });
 
-    println!(
-        "rank={}, vector.len={}, x_externals.len={}, local_nrow={}",
-        rank,
-        vector.len(),
-        x_externals[0].len(),
-        matrix.local_nrow
-    );
+    // println!(
+    //     "rank={}, vector.len={}, x_externals.len={}, local_nrow={}",
+    //     rank,
+    //     vector.len(),
+    //     x_externals[0].len(),
+    //     matrix.local_nrow
+    // );
 
-    let mut i = matrix.local_nrow - 1;
+    // println!("local={} , global={}", matrix.local_nrow, matrix.total_nrow);
+    // let mut i = matrix.local_nrow - 1;
     for x_external in x_externals.iter() {
         for &item in x_external {
-            println!("rank={}, i={}", rank, i);
+            // println!("rank={}, i={}, length={}", rank, i, vector.len());
             // vector[i] = item;
-            i += 1;
+            // i += 1;
             vector.push(item);
         }
     }
+    assert_eq!(vector.len(), matrix.local_ncol);
 
     // panic!("quit");
 

@@ -87,16 +87,43 @@ pub fn solver(
 
     // `p` is of length `ncols`, so copy `x` to `p` for sparse matrix-vector operation
     tick(&mut t_total);
-    // TODO: Don't need the unused length passed here?
     p = waxpby(result.len(), 1.0, &result, 0.0, b);
     tock(&t_total, &mut t_waxpby);
 
     tick(&mut t_mpi_exchange);
+    // println!(
+    //     "rank={}, iteration={}, p.length={}, result={:?}",
+    //     rank,
+    //     iteration,
+    //     p.len(),
+    //     result
+    // );
+    // println!(
+    //     "(pre) rank={}, p={:?}, p.length={}, ncol={}",
+    //     rank,
+    //     p,
+    //     p.len(),
+    //     ncol
+    // );
     exchange_externals(&mut A, &mut p, world);
+    // println!(
+    //     "(post) rank={}, p={:?}, p.length={}, ncol={}",
+    //     rank,
+    //     p,
+    //     p.len(),
+    //     ncol
+    // );
     tock(&t_total, &mut t_mpi_exchange);
 
     tick(&mut t_total);
     Ap = sparsemv(A, &p);
+    // println!(
+    //     "rank={}, iteration={}, p.length={}, result={:?}",
+    //     rank,
+    //     iteration,
+    //     p.len(),
+    //     result
+    // );
     tock(&t_total, &mut t_sparsemv);
 
     tick(&mut t_total);
@@ -106,6 +133,8 @@ pub fn solver(
     tick(&mut t_total);
     rtrans = ddot(r.len(), &r, &r, world);
     tock(&t_total, &mut t_ddot);
+
+    // println!("rank={}, r={:?}, rtrans={}", rank, &r, rtrans);
 
     normr = rtrans.sqrt();
 
@@ -134,29 +163,76 @@ pub fn solver(
         }
 
         normr = rtrans.sqrt();
-        if rank == 0 && (k % print_freq == 0 || k + 1 == max_iterations) {
-            println!("Iteration = {k} , Residual = {normr:+.5e}");
-        }
+        println!("rank={}, iteration={}, normr={:+.5e}", rank, k, normr);
+        // if rank == 0 && (k % print_freq == 0 || k + 1 == max_iterations) {
+        //     println!("Iteration = {k} , Residual = {normr:+.5e}");
+        // }
 
         tick(&mut t_mpi_exchange);
+        // println!(
+        //     "(pre) rank={}, iteration={}, p.length={}, result={:?}",
+        //     rank,
+        //     k,
+        //     p.len(),
+        //     result
+        // );
         exchange_externals(&mut A, &mut p, world);
+        // println!(
+        //     "(post) rank={}, iteration={}, p.length={}, result={:?}",
+        //     rank,
+        //     k,
+        //     p.len(),
+        //     result
+        // );
         tock(&t_total, &mut t_mpi_exchange);
 
         tick(&mut t_total);
         Ap = sparsemv(A, &p);
+        // println!(
+        //     "(sparsemv) rank={}, iteration={}, p.length={}, result={:?}",
+        //     rank,
+        //     k,
+        //     p.len(),
+        //     result
+        // );
         tock(&t_total, &mut t_sparsemv);
 
         tick(&mut t_total);
         let alpha = ddot(r.len(), &p, &Ap, world);
+        // println!(
+        //     "(ddot) rank={}, iteration={}, p.length={}, result={:?}",
+        //     rank,
+        //     k,
+        //     p.len(),
+        //     result
+        // );
         tock(&t_total, &mut t_ddot);
 
+        // println!(
+        //     "rank={}, iteration={}, rtrans={}, alpha={}",
+        //     rank, k, rtrans, alpha
+        // );
         let alpha = rtrans / alpha;
         tick(&mut t_total);
         result = waxpby(nrow, 1.0, &result, alpha, &p);
+        // println!("rank={}, result=[", rank);
+        // for item in result.iter() {
+        //     print!("{}, ", item);
+        // }
+        // println!("]");
         r = waxpby(nrow, 1.0, &r, -alpha, &Ap);
         tock(&t_total, &mut t_waxpby);
         iteration = k;
+        // println!(
+        //     "(final) rank={}, iteration={}, p.length={}, result={:?}",
+        //     rank,
+        //     k,
+        //     p.len(),
+        //     result
+        // );
     }
+
+    // println!("rank={}, result={:?}", rank, &result);
 
     (
         result,
