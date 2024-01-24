@@ -33,7 +33,6 @@ fn main() {
 
     // TODO: Add timer for overhead making the matrix
     make_local_matrix(&mut matrix, &world);
-    // return;
 
     let (result, iterations, normr, times) =
         hpccg::solver(&mut matrix, &rhs, &guess, max_iter, tolerance, &world);

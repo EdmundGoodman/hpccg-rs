@@ -50,13 +50,6 @@ pub fn exchange_externals(
                     &matrix.send_buffer[start..start + matrix.send_length[i]],
                     mpi_my_tag,
                 );
-
-            // println!(
-            //     "rank={}, target={}, data={:?}",
-            //     rank,
-            //     matrix.neighbors[i],
-            //     &matrix.send_buffer[start..start + matrix.send_length[i]]
-            // );
             start += matrix.send_length[i];
         }
 
@@ -65,64 +58,10 @@ pub fn exchange_externals(
         }
     });
 
-    // println!(
-    //     "rank={}, vector.len={}, x_externals.len={}, local_nrow={}",
-    //     rank,
-    //     vector.len(),
-    //     x_externals[0].len(),
-    //     matrix.local_nrow
-    // );
-
-    // println!("local={} , global={}", matrix.local_nrow, matrix.total_nrow);
-    // let mut i = matrix.local_nrow - 1;
     for x_external in x_externals.iter() {
         for &item in x_external {
-            // println!("rank={}, i={}, length={}", rank, i, vector.len());
-            // vector[i] = item;
-            // i += 1;
             vector.push(item);
         }
     }
     assert_eq!(vector.len(), matrix.local_ncol);
-
-    // panic!("quit");
-
-    // for slice in result_slices.iter() {
-    //     for &item in slice {
-    //         let lhs = item as i32;
-    //         let rhs = matrix.start_row as i32;
-    //         matrix.elements_to_send.push(lhs - rhs);
-    //     }
-    // }
-
-    // ===== //
-    // let num_external = 0;
-    // let mut x_external: Vec<f64> = vec![];
-
-    // mpi::request::scope(|scope| {
-    //     let reqs = vec![];
-    //     for neighbor in matrix.neighbors.iter() {
-    //         let mut recv = vec![];
-    //         let req = world
-    //             .process_at_rank(*neighbor as Rank)
-    //             .immediate_receive_into(scope, &mut recv);
-    //         x_external.append(&mut (recv.clone()));
-    //         reqs.push(req);
-    //     }
-
-    //     // Fill up the send buffer
-    //     for i in 0..matrix.total_to_be_sent {
-    //         matrix.send_buffer[i] = vector[matrix.elements_to_send[i]];
-    //     }
-    //     // Send to each neighbor
-    //     for neighbor in matrix.neighbors {
-    //         world
-    //             .process_at_rank(neighbor as Rank)
-    //             .send(&matrix.send_buffer);
-    //     }
-    //     // Complete the reads issued above
-    //     for req in reqs {
-    //         req.wait();
-    //     }
-    // });
 }

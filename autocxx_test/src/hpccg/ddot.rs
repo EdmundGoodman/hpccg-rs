@@ -33,6 +33,7 @@ pub fn ddot(width: usize, lhs: &[f64], rhs: &[f64]) -> f64 {
     result
 }
 
+
 #[test]
 fn test_ddot() {
     let width = 3;

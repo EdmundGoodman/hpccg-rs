@@ -33,7 +33,9 @@ converting pointer arithmetic to array indexing - does this incur a performance 
 - PR fix to UK-MAC website broken links
 - HPCCG
   - Finish MPI translation
-  - Consider using direct ffi::MPI ?
+    - Clean up/TODOS
+    - Documentation/fixes in original HPCCG code?
+    - Consider additional using direct ffi::MPI ?
   - Fix and PR docs and CMakelist for original code
   - Investigate using sprs matrix library
   - Investigate auto-vectorisation
