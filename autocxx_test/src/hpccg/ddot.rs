@@ -1,13 +1,13 @@
-use autocxx::prelude::*;
+use crate::cpp_ffi::ddot as ffi_ddot;
 use autocxx::c_int;
 
-const TEST_RUST: bool = true;
+const TEST_RUST: bool = false;
 
-include_cpp! {
-    #include "ddot.hpp"
-    safety!(unsafe_ffi)
-    generate!("ddot")
-}
+// include_cpp! {
+//     #include "ddot.hpp"
+//     safety!(unsafe_ffi)
+//     generate!("ddot")
+// }
 
 /// A method to compute the dot product of two vectors.
 ///
@@ -32,41 +32,40 @@ pub fn ddot(width: usize, lhs: &[f64], rhs: &[f64]) -> f64 {
     result
 }
 
-
 #[test]
 fn test_ddot() {
     let width = 3;
     let lhs = vec![1.0, 2.0, 3.0];
     let rhs = vec![3.0, 2.0, 1.0];
 
-
     let result = if TEST_RUST {
         ddot(width, &lhs, &rhs)
     } else {
         let mut result = 0.0;
         unsafe {
-            ffi::ddot(
+            ffi_ddot(
                 c_int(width as i32),
-                lhs.clone().as_mut_ptr(),
-                rhs.clone().as_mut_ptr(),
-                &mut result
+                // lhs.clone().as_mut_ptr(),
+                // rhs.clone().as_mut_ptr(),
+                lhs.as_ptr(),
+                rhs.as_ptr(),
+                &mut result,
             );
         }
         result
     };
     assert_eq!(result, 10.0);
 
-
     let result = if TEST_RUST {
         ddot(width, &lhs, &lhs)
     } else {
         let mut result = 0.0;
         unsafe {
-            ffi::ddot(
+            ffi_ddot(
                 c_int(width as i32),
                 lhs.clone().as_mut_ptr(),
                 lhs.clone().as_mut_ptr(),
-                &mut result
+                &mut result,
             );
         }
         result

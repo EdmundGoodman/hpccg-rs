@@ -1,3 +1,8 @@
+use crate::cpp_ffi::waxpby as ffi_waxpby;
+use autocxx::c_int;
+
+const TEST_RUST: bool = false;
+
 /// A function to compute the sum of two scaled vectors.
 ///
 /// # Arguments
@@ -32,6 +37,25 @@ fn test_waxpby() {
     let vy = vec![3.0, 2.0, 1.0];
     let alpha = 4.0;
     let beta = 5.0;
+
+    let result = if TEST_RUST {
+        waxpby(width, alpha, &vx, beta, &vy)
+    } else {
+        let mut result = vec![0.0; 3];
+        unsafe {
+            ffi_waxpby(
+                c_int(width as i32),
+                alpha,
+                vx.as_ptr(),
+                beta,
+                vy.as_ptr(),
+                result.as_mut_ptr(),
+            );
+        }
+        result
+    };
+    assert_eq!(result, vec![19.0, 18.0, 17.0]);
+
     let result = waxpby(width, alpha, &vx, beta, &vy);
     assert_eq!(result, vec![19.0, 18.0, 17.0]);
     let alpha = 1.0;
