@@ -1,5 +1,6 @@
 use crate::cpp_ffi::ddot as ffi_ddot;
 use autocxx::c_int;
+use std::pin::Pin;
 
 const TEST_RUST: bool = false;
 
@@ -42,14 +43,14 @@ fn test_ddot() {
         ddot(width, &lhs, &rhs)
     } else {
         let mut result = 0.0;
+        let mut tmp = 0.0;
         unsafe {
             ffi_ddot(
                 c_int(width as i32),
-                // lhs.clone().as_mut_ptr(),
-                // rhs.clone().as_mut_ptr(),
                 lhs.as_ptr(),
                 rhs.as_ptr(),
                 &mut result,
+                Pin::new(&mut tmp),
             );
         }
         result
@@ -60,12 +61,14 @@ fn test_ddot() {
         ddot(width, &lhs, &lhs)
     } else {
         let mut result = 0.0;
+        let mut tmp = 0.0;
         unsafe {
             ffi_ddot(
                 c_int(width as i32),
                 lhs.clone().as_mut_ptr(),
                 lhs.clone().as_mut_ptr(),
                 &mut result,
+                Pin::new(&mut tmp),
             );
         }
         result

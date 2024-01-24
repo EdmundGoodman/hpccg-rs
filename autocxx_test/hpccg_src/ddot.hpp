@@ -44,5 +44,6 @@
 #include "mytimer.hpp"
 #endif
 
-int ddot(const int n, const double* const x, const double* const y, double* const result);
+int ddot(const int width, const double* const lhs, const double* const rhs, double* const result,
+         double& time_allreduce);
 #endif
