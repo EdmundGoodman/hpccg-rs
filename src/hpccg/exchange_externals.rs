@@ -1,6 +1,4 @@
-use mpi::request::Request;
 use mpi::traits::*;
-use mpi::Rank;
 
 use super::SparseMatrix;
 
@@ -15,14 +13,11 @@ pub fn exchange_externals(
     vector: &mut Vec<f64>,
     world: &impl Communicator,
 ) {
-    let size = world.size();
-    let rank = world.rank();
-
     let mpi_my_tag = 99;
 
     let mut x_externals = vec![];
     for i in 0..matrix.num_send_neighbors {
-        let mut slice = vec![0.0; matrix.recv_length[i]];
+        let slice = vec![0.0; matrix.recv_length[i]];
         x_externals.push(slice);
     }
 
@@ -54,7 +49,8 @@ pub fn exchange_externals(
         }
 
         while coll.incomplete() > 0 {
-            let (request_index, status, _) = coll.wait_any().expect("MPI_Wait error");
+            // let (request_index, status, _) =
+            coll.wait_any().expect("MPI_Wait error");
         }
     });
 
