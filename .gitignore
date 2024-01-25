@@ -1,7 +1,7 @@
 ### Project-specific excludes ###
 *perf.data*
 *.err
-
+*.out*
 
 ### C++ excludes ###
 # Prerequisites
