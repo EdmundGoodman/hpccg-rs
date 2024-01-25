@@ -12,6 +12,18 @@ const MAX_NUM_NEIGHBORS: usize = MAX_NUM_MESSAGES;
 const DEBUG: bool = false;
 const DEBUG_DETAILS: bool = false;
 
+pub mod make_local_matrix_internals {
+    pub use super::build_elements_to_send_list;
+    pub use super::compare_send_recv_lists;
+    pub use super::count_num_neighbors;
+    pub use super::create_ordered_new_external;
+    pub use super::find_accessed_processors;
+    pub use super::make_list_of_neighbors;
+    pub use super::scan_and_transform_local;
+    pub use super::send_processor_global_index;
+    pub use super::sift_external_elements;
+}
+
 pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     let (externals, num_external) = scan_and_transform_local(matrix, world);
     matrix.num_external = num_external;
@@ -127,7 +139,10 @@ pub fn scan_and_transform_local(
 /// other processors.
 /// Note:  There might be a better algorithm for doing this, but this
 ///        will work...
-fn find_accessed_processors(matrix: &mut SparseMatrix, world: &impl Communicator) -> Vec<usize> {
+pub fn find_accessed_processors(
+    matrix: &mut SparseMatrix,
+    world: &impl Communicator,
+) -> Vec<usize> {
     let size = world.size() as usize;
     let rank = world.rank() as usize;
 
@@ -165,7 +180,7 @@ fn find_accessed_processors(matrix: &mut SparseMatrix, world: &impl Communicator
 /// external elements who are update by the same node and assign them the next
 /// set of index numbers in the sequence (ie. elements updated by the same node
 /// have consecutive indices).
-fn sift_external_elements(
+pub fn sift_external_elements(
     matrix: &mut SparseMatrix,
     externals: HashMap<usize, usize>,
     external_processor: Vec<usize>,
@@ -234,7 +249,7 @@ fn sift_external_elements(
 ///      tmp_neighbors[i] = x   ==>  (x-1)/size elements are updated from
 ///                              processor i.
 ///
-fn count_num_neighbors(
+pub fn count_num_neighbors(
     matrix: &mut SparseMatrix,
     new_external_processor: &Vec<usize>,
     world: &impl Communicator,
@@ -291,7 +306,7 @@ fn count_num_neighbors(
 
 /// Make a list of the neighbors that will send information to update our
 /// external elements (in the order that we will receive this information).
-fn make_list_of_neighbors(
+pub fn make_list_of_neighbors(
     matrix: &mut SparseMatrix,
     new_external_processor: &Vec<usize>,
     num_recv_neighbors: usize,
@@ -347,7 +362,7 @@ fn make_list_of_neighbors(
 ///  Compare the two lists. In most cases they should be the same.
 ///  However, if they are not then add new entries to the recv list
 ///  that are in the send list (but not already in the recv list).
-fn compare_send_recv_lists(
+pub fn compare_send_recv_lists(
     recv_list: &mut Vec<usize>,
     send_list: &Vec<usize>,
     num_recv_neighbors: usize,
@@ -396,7 +411,7 @@ fn compare_send_recv_lists(
 
 /// Create 'new_external' which explicitly put the external elements in the
 /// order given by 'external_local_index'
-fn create_ordered_new_external(matrix: &mut SparseMatrix) -> Vec<usize> {
+pub fn create_ordered_new_external(matrix: &mut SparseMatrix) -> Vec<usize> {
     let mut new_external = vec![0; matrix.num_external];
     for i in 0..matrix.num_external {
         new_external[matrix.external_local_index[i] as usize - matrix.local_nrow] =
@@ -411,7 +426,7 @@ fn create_ordered_new_external(matrix: &mut SparseMatrix) -> Vec<usize> {
 
 /// Send each processor the global index list of the external elements in the
 /// order that I will want to receive them when updating my external elements
-fn send_processor_global_index(
+pub fn send_processor_global_index(
     matrix: &mut SparseMatrix,
     mpi_my_tag: i32,
     recv_list: &Vec<usize>,
@@ -483,7 +498,7 @@ fn send_processor_global_index(
 
 /// Build "elements_to_send" list.  These are the x elements I own
 /// that need to be sent to other processors.
-fn build_elements_to_send_list(
+pub fn build_elements_to_send_list(
     matrix: &mut SparseMatrix,
     mpi_my_tag: i32,
     recv_list: &Vec<usize>,

@@ -9,6 +9,7 @@ mod waxpby;
 
 pub mod hpccg_internals {
     pub use super::ddot::ddot;
+    pub use super::make_local_matrix::{make_local_matrix, make_local_matrix_internals};
     pub use super::sparsmv::sparsemv;
     pub use super::waxpby::waxpby;
 }
