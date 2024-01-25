@@ -9,8 +9,6 @@ mod waxpby;
 
 pub mod hpccg_internals {
     pub use super::ddot::ddot;
-    pub use super::exchange_externals::exchange_externals;
-    pub use super::make_local_matrix::make_local_matrix;
     pub use super::sparsmv::sparsemv;
     pub use super::waxpby::waxpby;
 }
@@ -85,11 +83,11 @@ pub fn solver(
     let rank = world.rank();
 
     // TODO: Propagate this across all other versions
-    let print_freq = 1; //(max_iterations / 10).max(1).min(50);
+    let print_freq = (max_iterations / 10).max(1).min(50);
 
     // `p` is of length `ncols`, so copy `x` to `p` for sparse matrix-vector operation
     tick(&mut t_total);
-    p = waxpby(result.len(), 1.0, &result, 0.0, b, world);
+    p = waxpby(result.len(), 1.0, &result, 0.0, b);
     tock(&t_total, &mut t_waxpby);
 
     tick(&mut t_mpi_exchange);
@@ -97,11 +95,11 @@ pub fn solver(
     tock(&t_total, &mut t_mpi_exchange);
 
     tick(&mut t_total);
-    Ap = sparsemv(A, &p, world);
+    Ap = sparsemv(A, &p);
     tock(&t_total, &mut t_sparsemv);
 
     tick(&mut t_total);
-    r = waxpby(result.len(), 1.0, b, -1.0, &Ap, world);
+    r = waxpby(result.len(), 1.0, b, -1.0, &Ap);
     tock(&t_total, &mut t_waxpby);
 
     tick(&mut t_total);
@@ -119,44 +117,20 @@ pub fn solver(
             break;
         }
 
-        // if rank == 0 {
-        //     print!("(pre) rank={}, r=[", rank);
-        //     for val in r.iter() {
-        //         print!("{val:+.5e}, ");
-        //     }
-        //     println!("]");
-        // }
-
         if k == 1 {
             tick(&mut t_total);
-            p = waxpby(nrow, 1.0, &r, 0.0, &r, world);
+            p = waxpby(nrow, 1.0, &r, 0.0, &r);
             tock(&t_total, &mut t_waxpby);
         } else {
             oldrtrans = rtrans;
             tick(&mut t_total);
             rtrans = ddot(nrow, &r, &r, world);
             tock(&t_total, &mut t_ddot);
-
-            // if rank == 0 {
-            //     println!(
-            //         "rank={}, oldrtrans={:+.5e}, rtrans={:+.5e}",
-            //         rank, oldrtrans, rtrans
-            //     );
-            // }
-
             let beta = rtrans / oldrtrans;
             tick(&mut t_total);
-            p = waxpby(nrow, 1.0, &r, beta, &p, world);
+            p = waxpby(nrow, 1.0, &r, beta, &p);
             tock(&t_total, &mut t_waxpby);
         }
-
-        // if rank == 0 {
-        //     print!("(post) rank={}, r=[", rank);
-        //     for val in r.iter() {
-        //         print!("{val:+.5e}, ");
-        //     }
-        //     println!("]");
-        // }
 
         normr = rtrans.sqrt();
         if rank == 0 && (k % print_freq == 0 || k + 1 == max_iterations) {
@@ -164,84 +138,21 @@ pub fn solver(
         }
 
         tick(&mut t_mpi_exchange);
-        // if rank == 0 {
-        //     print!("(pre) rank={}, p=[", rank);
-        //     for val in p.iter() {
-        //         print!("{val:+.5e}, ");
-        //     }
-        //     println!("]");
-        // }
         exchange_externals(&mut A, &mut p, world);
-        // if rank == 0 {
-        //     print!("(post) rank={}, p=[", rank);
-        //     for val in p.iter() {
-        //         print!("{val:+.5e}, ");
-        //     }
-        //     println!("]");
-        // }
         tock(&t_total, &mut t_mpi_exchange);
 
         tick(&mut t_total);
-        // if rank == 0 {
-        //     print!("(pre) rank={}, Ap=[", rank);
-        //     for val in Ap.iter() {
-        //         print!("{val:+.5e}, ");
-        //     }
-        //     println!("]");
-        // }
-        Ap = sparsemv(A, &p, world);
-        // if rank == 0 {
-        //     print!("(post) rank={}, Ap=[", rank);
-        //     for val in Ap.iter() {
-        //         print!("{val:+.5e}, ");
-        //     }
-        //     println!("]");
-        // }
+        Ap = sparsemv(A, &p);
         tock(&t_total, &mut t_sparsemv);
 
         tick(&mut t_total);
         let alpha = ddot(r.len(), &p, &Ap, world);
         tock(&t_total, &mut t_ddot);
 
-        // if rank == 0 {
-        //     println!(
-        //         "rank={}, rtrans={:+.5e}, alpha={:+.5e}",
-        //         rank, rtrans, alpha
-        //     );
-        // }
         let alpha = rtrans / alpha;
-        // if rank == 0 {
-        //     println!(
-        //         "rank={}, rtrans={:+.5e}, alpha={:+.5e}",
-        //         rank, rtrans, alpha
-        //     );
-        // }
         tick(&mut t_total);
-        result = waxpby(nrow, 1.0, &result, alpha, &p, world);
-
-        // if rank == 0 {
-        //     print!("(pre) rank={}, r=[", rank);
-        //     for val in r.iter() {
-        //         print!("{val:+.5e}, ");
-        //     }
-        //     println!("], nrow={}", nrow);
-        // }
-        // if rank == 0 {
-        //     print!("(pre) rank={}, Ap=[", rank);
-        //     for val in Ap.iter() {
-        //         print!("{val:+.5e}, ");
-        //     }
-        //     println!("]");
-        // }
-        r = waxpby(nrow, 1.0, &r, -alpha, &Ap, world);
-        // if rank == 0 {
-        //     print!("(post) rank={}, r=[", rank);
-        //     for val in r.iter() {
-        //         print!("{val:+.5e}, ");
-        //     }
-        //     println!("]");
-        // }
-
+        result = waxpby(nrow, 1.0, &result, alpha, &p);
+        r = waxpby(nrow, 1.0, &r, -alpha, &Ap);
         tock(&t_total, &mut t_waxpby);
         iteration = k;
     }

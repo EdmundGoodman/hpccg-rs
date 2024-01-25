@@ -16,6 +16,7 @@ pub fn ddot(_width: usize, lhs: &[f64], rhs: &[f64], world: &impl Communicator) 
     } else {
         lhs.iter().zip(rhs.iter()).map(|(x, y)| x * y).sum()
     };
+
     // TODO: Add another timer
     let mut global_result = 0.0;
     world.all_reduce_into(&local_result, &mut global_result, SystemOperation::sum());
