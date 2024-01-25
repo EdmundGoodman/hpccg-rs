@@ -56,13 +56,42 @@ fn test_waxpby() {
     };
     assert_eq!(result, vec![19.0, 18.0, 17.0]);
 
-    let result = waxpby(width, alpha, &vx, beta, &vy);
-    assert_eq!(result, vec![19.0, 18.0, 17.0]);
     let alpha = 1.0;
-    let result = waxpby(width, alpha, &vx, beta, &vy);
+    let result = if TEST_RUST {
+        waxpby(width, alpha, &vx, beta, &vy)
+    } else {
+        let mut result = vec![0.0; 3];
+        unsafe {
+            ffi_waxpby(
+                c_int(width as i32),
+                alpha,
+                vx.as_ptr(),
+                beta,
+                vy.as_ptr(),
+                result.as_mut_ptr(),
+            );
+        }
+        result
+    };
     assert_eq!(result, vec![16.0, 12.0, 8.0]);
+
     let alpha = 4.0;
     let beta = 1.0;
-    let result = waxpby(width, alpha, &vx, beta, &vy);
+    let result = if TEST_RUST {
+        waxpby(width, alpha, &vx, beta, &vy)
+    } else {
+        let mut result = vec![0.0; 3];
+        unsafe {
+            ffi_waxpby(
+                c_int(width as i32),
+                alpha,
+                vx.as_ptr(),
+                beta,
+                vy.as_ptr(),
+                result.as_mut_ptr(),
+            );
+        }
+        result
+    };
     assert_eq!(result, vec![7.0, 10.0, 13.0]);
 }
