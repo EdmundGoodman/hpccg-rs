@@ -1,0 +1,18 @@
+[package]
+name = "hpccg-rs-iterators"
+version = "0.1.0"
+edition = "2021"
+
+# https://nnethercote.github.io/perf-book/build-configuration.html
+[profile.release]
+debug = true
+#codegen-units = 1
+#lto = "fat"
+#panic = "abort"
+#
+#[build]
+#rustflags = ["-C", "target-cpu=native"]
+
+[dependencies]
+libc = "0.2.149"
+sprs = "0.11.1"
