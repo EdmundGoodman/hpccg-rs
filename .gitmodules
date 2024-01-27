@@ -1,3 +1,3 @@
 [submodule "HPCCG"]
-	path = 0_original
+	path = 0_cpp
 	url = https://github.com/EdmundGoodman/HPCCG
