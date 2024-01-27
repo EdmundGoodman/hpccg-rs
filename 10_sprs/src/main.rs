@@ -1,29 +1,5 @@
 pub mod hpccg;
 
-// fn matrix_to_sprs(matrix: hpccg::SparseMatrix) -> sprs::CsMat<f64> {
-//     // let mut val_index = 0;
-//     // let mut sprs_matrix = sprs::TriMatBase::new((matrix.local_nrow, matrix.local_ncol));
-//     // for (row, nnz_in_row) in matrix.nnz_in_row.iter().enumerate() {
-//     //     for _ in 0..*nnz_in_row {
-//     //         sprs_matrix.add_triplet(
-//     //             row,
-//     //             matrix.list_of_inds[val_index],
-//     //             matrix.list_of_vals[val_index],
-//     //         );
-//     //         val_index += 1;
-//     //     }
-//     // }
-//     // sprs_matrix.to_csr()
-//     let mut ind_ptrs = matrix.row_start_inds.clone();
-//     ind_ptrs.push(*ind_ptrs.last().unwrap() + matrix.nnz_in_row.last().unwrap());
-//     sprs::CsMat::new(
-//         (matrix.local_nrow, matrix.local_ncol),
-//         ind_ptrs,
-//         matrix.list_of_inds,
-//         matrix.list_of_vals,
-//     )
-// }
-
 /// The driver code for the calculating the conjugate gradient.
 ///
 /// First,the progam generatess the matrix, right hand side vector,
@@ -48,13 +24,13 @@ fn main() {
     let tolerance = 0.0;
 
     let (result, iterations, normr, times) =
-        hpccg::solver(&matrix, &rhs, &guess, max_iter, tolerance);
+        hpccg::solver(&matrix, rhs, guess, max_iter, tolerance);
 
-    let ddot_flops = iterations as i64 * 4 * matrix.total_nrow as i64;
-    let waxpby_flops = iterations as i64 * 6 * matrix.total_nrow as i64;
-    let sparsemv_flops = iterations as i64 * 2 * matrix.total_nnz as i64;
+    let ddot_flops = iterations as i64 * 4 * matrix.rows() as i64;
+    let waxpby_flops = iterations as i64 * 6 * matrix.rows() as i64;
+    let sparsemv_flops = iterations as i64 * 2 * matrix.nnz() as i64;
     let total_flops = ddot_flops + waxpby_flops + sparsemv_flops;
-    let residual = hpccg::compute_residual(matrix.local_nrow, &result, &exact);
+    let residual = hpccg::compute_residual(matrix.rows(), result, exact);
 
     println!("Mini-Application Name: hpccg-iterators");
     println!("Mini-Application Version: 1.0");

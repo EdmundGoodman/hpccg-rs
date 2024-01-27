@@ -1,3 +1,5 @@
+use sprs::CsVec;
+
 /// A method to compute the dot product of two vectors.
 ///
 /// This function optimises caching by only accessing one of the vectors if both of the
@@ -7,13 +9,8 @@
 /// * `_width` - The width of both input vectors.
 /// * `lhs` - The first input vector.
 /// * `rhs` - The second input vector.
-pub fn ddot(_width: usize, lhs: &[f64], rhs: &[f64]) -> f64 {
-    if std::ptr::eq(lhs, rhs) {
-        lhs.iter().map(|x| x * x).sum()
-    } else {
-        lhs.iter().zip(rhs.iter())
-            .map(|(x, y)| x * y).sum()
-    }
+pub fn ddot(_width: usize, lhs: &CsVec<f64>, rhs: &CsVec<f64>) -> f64 {
+    lhs.dot(rhs)
 }
 
 #[test]
