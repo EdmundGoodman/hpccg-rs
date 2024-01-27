@@ -1,28 +1,28 @@
 pub mod hpccg;
 
-fn matrix_to_sprs(matrix: hpccg::SparseMatrix) -> sprs::CsMat<f64> {
-    // let mut val_index = 0;
-    // let mut sprs_matrix = sprs::TriMatBase::new((matrix.local_nrow, matrix.local_ncol));
-    // for (row, nnz_in_row) in matrix.nnz_in_row.iter().enumerate() {
-    //     for _ in 0..*nnz_in_row {
-    //         sprs_matrix.add_triplet(
-    //             row,
-    //             matrix.list_of_inds[val_index],
-    //             matrix.list_of_vals[val_index],
-    //         );
-    //         val_index += 1;
-    //     }
-    // }
-    // sprs_matrix.to_csr()
-    let mut ind_ptrs = matrix.row_start_inds.clone();
-    ind_ptrs.push(*ind_ptrs.last().unwrap() + matrix.nnz_in_row.last().unwrap());
-    sprs::CsMat::new(
-        (matrix.local_nrow, matrix.local_ncol),
-        ind_ptrs,
-        matrix.list_of_inds,
-        matrix.list_of_vals,
-    )
-}
+// fn matrix_to_sprs(matrix: hpccg::SparseMatrix) -> sprs::CsMat<f64> {
+//     // let mut val_index = 0;
+//     // let mut sprs_matrix = sprs::TriMatBase::new((matrix.local_nrow, matrix.local_ncol));
+//     // for (row, nnz_in_row) in matrix.nnz_in_row.iter().enumerate() {
+//     //     for _ in 0..*nnz_in_row {
+//     //         sprs_matrix.add_triplet(
+//     //             row,
+//     //             matrix.list_of_inds[val_index],
+//     //             matrix.list_of_vals[val_index],
+//     //         );
+//     //         val_index += 1;
+//     //     }
+//     // }
+//     // sprs_matrix.to_csr()
+//     let mut ind_ptrs = matrix.row_start_inds.clone();
+//     ind_ptrs.push(*ind_ptrs.last().unwrap() + matrix.nnz_in_row.last().unwrap());
+//     sprs::CsMat::new(
+//         (matrix.local_nrow, matrix.local_ncol),
+//         ind_ptrs,
+//         matrix.list_of_inds,
+//         matrix.list_of_vals,
+//     )
+// }
 
 /// The driver code for the calculating the conjugate gradient.
 ///
@@ -42,14 +42,7 @@ fn main() {
         _ => (25, 25, 25),
     };
 
-    let (matrix, guess, rhs, exact) = hpccg::SparseMatrix::generate_matrix(2, 2, 2);
-    let sprs_matrix = matrix_to_sprs(matrix);
-    println!("{:?}", sprs_matrix);
-
-    // let sprs_matrix = matrix_to_sprs(matrix);
-    // println!("{:?}", sprs_matrix);
-
-    return;
+    let (matrix, guess, rhs, exact) = hpccg::generate_matrix(nx, ny, nz);
 
     let max_iter = 150;
     let tolerance = 0.0;

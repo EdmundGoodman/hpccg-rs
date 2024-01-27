@@ -8,7 +8,7 @@ mod waxpby;
 pub use compute_residual::compute_residual;
 use ddot::ddot;
 use mytimer::mytimer;
-pub use sparse_matrix::SparseMatrix;
+pub use sparse_matrix::{generate_matrix, SparseMatrix};
 use sparsmv::sparsemv;
 use waxpby::waxpby;
 
@@ -156,7 +156,7 @@ pub fn solver(
 #[test]
 fn test_solver() {
     let (nx, ny, nz) = (5, 5, 5);
-    let (matrix, guess, rhs, exact) = SparseMatrix::generate_matrix(nx, ny, nz);
+    let (matrix, guess, rhs, exact) = generate_matrix(nx, ny, nz);
     let max_iter = 150;
     let tolerance = 5e-40;
     let (result, iterations, normr, _) = solver(&matrix, &rhs, &guess, max_iter, tolerance);
