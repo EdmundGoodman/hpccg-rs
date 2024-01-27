@@ -1,4 +1,4 @@
-use sprs::CsVec;
+use ndarray::Array1;
 
 /// A function to compute the sum of two scaled vectors.
 ///
@@ -7,8 +7,9 @@ use sprs::CsVec;
 /// * `x` - The first input vector.
 /// * `beta` - The scaling factor for the second vector.
 /// * `y` - The second input vector.
-pub fn waxpby(alpha: f64, x: &CsVec<f64>, beta: f64, y: &CsVec<f64>) -> CsVec<f64> {
-    x.map(|i| i * alpha) + y.map(|i| i * beta)
+pub fn waxpby(alpha: f64, x: &Array1<f64>, beta: f64, y: &Array1<f64>) -> Array1<f64> {
+    // x.map(|i| i * alpha) + y.map(|i| i * beta)
+    (x * alpha) + (y * beta)
     // (x * alpha) + (beta * y)
     // if alpha == 1.0 {
     //     x.iter().zip(y.iter()).map(|(x, y)| x + beta * y).collect()

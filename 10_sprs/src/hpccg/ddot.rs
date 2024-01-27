@@ -1,4 +1,4 @@
-use sprs::CsVec;
+use ndarray::Array1;
 
 /// A method to compute the dot product of two vectors.
 ///
@@ -8,6 +8,6 @@ use sprs::CsVec;
 /// # Arguments
 /// * `lhs` - The first input vector.
 /// * `rhs` - The second input vector.
-pub fn ddot(lhs: &CsVec<f64>, rhs: &CsVec<f64>) -> f64 {
+pub fn ddot(lhs: &Array1<f64>, rhs: &Array1<f64>) -> f64 {
     lhs.dot(rhs)
 }

@@ -1,4 +1,5 @@
-use sprs::{CsMat, CsVec};
+use ndarray::Array1;
+use sprs::CsMat;
 
 /// Generates the initial mesh and its associated values.
 ///
@@ -16,7 +17,7 @@ pub fn generate_matrix(
     nx: usize,
     ny: usize,
     nz: usize,
-) -> (CsMat<f64>, CsVec<f64>, CsVec<f64>, CsVec<f64>) {
+) -> (CsMat<f64>, Array1<f64>, Array1<f64>, Array1<f64>) {
     let use_7pt_stencil = false;
 
     // The size of our sub-block (must be non-zero)
@@ -105,11 +106,12 @@ pub fn generate_matrix(
         list_of_vals,
     );
 
-    let guess = CsVec::new(guess.len(), (0..guess.len()).collect(), guess.to_vec());
-    let rhs = CsVec::new(rhs.len(), (0..rhs.len()).collect(), rhs.to_vec());
-    let exact = CsVec::new(exact.len(), (0..exact.len()).collect(), exact.to_vec());
-
-    (matrix, guess, rhs, exact)
+    (
+        matrix,
+        Array1::from(guess),
+        Array1::from(rhs),
+        Array1::from(exact),
+    )
 }
 
 #[test]

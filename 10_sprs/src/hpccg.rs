@@ -12,7 +12,8 @@ pub use sparse_matrix::generate_matrix;
 use sparsmv::sparsemv;
 use waxpby::waxpby;
 
-use sprs::{CsMat, CsVec};
+use ndarray::Array1;
+use sprs::CsMat;
 
 /// Store the start time for a code section.
 fn tick(t0: &mut f64) {
@@ -43,11 +44,11 @@ fn tock(t0: &f64, t: &mut f64) {
 #[allow(non_snake_case, unused_assignments, unused_mut)]
 pub fn solver(
     A: &CsMat<f64>,
-    b: CsVec<f64>,
-    x: CsVec<f64>,
+    b: Array1<f64>,
+    x: Array1<f64>,
     max_iterations: i32,
     tolerance: f64,
-) -> (CsVec<f64>, i32, f64, Vec<f64>) {
+) -> (Array1<f64>, i32, f64, Vec<f64>) {
     let t_begin: f64 = mytimer();
     let mut t_total: f64 = 0.0;
     let mut t_ddot: f64 = 0.0;
@@ -55,29 +56,18 @@ pub fn solver(
     let mut t_sparsemv: f64 = 0.0;
     let mut t_mpi_allreduce: f64 = 0.0;
 
-    let nrow = A.rows();
-    let ncol = A.cols();
-    // `rank` only used in MPI mode
-    let _rank: i32 = 0;
-
-    let mut r: CsVec<f64>;
-    let mut p: CsVec<f64>;
-    let mut Ap: CsVec<f64>;
+    let mut r: Array1<f64>;
+    let mut p: Array1<f64>;
+    let mut Ap: Array1<f64>;
 
     let mut result = x.to_owned();
     let mut iteration = 0;
-    // TODO: Work out what these variable names mean
+
     let mut normr = 0.0;
     let mut rtrans: f64 = 0.0;
     let mut oldrtrans: f64 = 0.0;
 
-    // let print_freq = (max_iter/10).max(1).min(50);
-    let mut print_freq = max_iterations / 10;
-    if print_freq > 50 {
-        print_freq = 50;
-    } else if print_freq < 1 {
-        print_freq = 1;
-    }
+    let print_freq = (max_iterations / 10).max(1).min(50);
 
     // `p` is of length `ncols`, so copy `x` to `p` for sparse matrix-vector operation
     tick(&mut t_total);

@@ -1,4 +1,4 @@
-use sprs::CsVec;
+use ndarray::Array1;
 
 /// A method to compute the 1-norm difference between two vectors.
 ///
@@ -8,11 +8,10 @@ use sprs::CsVec;
 /// # Arguments
 /// * `actual` - The vector of actual values.
 /// * `expected` - The vector of expected values.
-pub fn compute_residual(actual: CsVec<f64>, expected: CsVec<f64>) -> f64 {
+pub fn compute_residual(actual: Array1<f64>, expected: Array1<f64>) -> f64 {
     actual
-        .to_dense()
         .iter()
-        .zip(expected.to_dense().iter())
+        .zip(expected.iter())
         .map(|(x, y)| (x - y).abs())
         // Need to account for f64 not being totally ordered (https://stackoverflow.com/a/50308360)
         .max_by(|a, b| a.partial_cmp(b).expect("Tried to compare a NaN"))
