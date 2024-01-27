@@ -30,7 +30,7 @@ fn main() {
     let waxpby_flops = iterations as i64 * 6 * matrix.rows() as i64;
     let sparsemv_flops = iterations as i64 * 2 * matrix.nnz() as i64;
     let total_flops = ddot_flops + waxpby_flops + sparsemv_flops;
-    let residual = hpccg::compute_residual(result, exact);
+    let residual = hpccg::compute_residual(&result, &exact);
 
     println!("Mini-Application Name: hpccg-iterators");
     println!("Mini-Application Version: 1.0");

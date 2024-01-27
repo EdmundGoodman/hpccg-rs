@@ -145,18 +145,18 @@ pub fn solver(
     )
 }
 
-// #[test]
-// fn test_solver() {
-//     let (nx, ny, nz) = (5, 5, 5);
-//     let (matrix, guess, rhs, exact) = generate_matrix(nx, ny, nz);
-//     let max_iter = 150;
-//     let tolerance = 5e-40;
-//     let (result, iterations, normr, _) = solver(&matrix, &rhs, &guess, max_iter, tolerance);
-//     let residual = compute_residual(matrix.rows(), &result, &exact);
-//     assert!(normr < tolerance);
-//     assert!(iterations < max_iter);
-//     assert!(residual < 1e-15);
-//     for (actual, expected) in result.iter().zip(exact) {
-//         assert!((expected - actual).abs() < 1e-5);
-//     }
-// }
+#[test]
+fn test_solver() {
+    let (nx, ny, nz) = (5, 5, 5);
+    let (matrix, guess, rhs, exact) = generate_matrix(nx, ny, nz);
+    let max_iter = 150;
+    let tolerance = 5e-40;
+    let (result, iterations, normr, _) = solver(&matrix, rhs, guess, max_iter, tolerance);
+    let residual = compute_residual(&result, &exact);
+    assert!(normr < tolerance);
+    assert!(iterations < max_iter);
+    assert!(residual < 1e-15);
+    for (actual, expected) in result.iter().zip(exact) {
+        assert!((expected - actual).abs() < 1e-5);
+    }
+}

@@ -16,4 +16,4 @@ debug = true
 [dependencies]
 libc = "0.2.149"
 ndarray = { version = "0.15.6", features = ["rayon"] }
-sprs = "0.11.1"
+sprs = { version = "0.11.1", features = ["multi_thread"] }

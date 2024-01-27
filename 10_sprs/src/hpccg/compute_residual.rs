@@ -8,7 +8,7 @@ use ndarray::Array1;
 /// # Arguments
 /// * `actual` - The vector of actual values.
 /// * `expected` - The vector of expected values.
-pub fn compute_residual(actual: Array1<f64>, expected: Array1<f64>) -> f64 {
+pub fn compute_residual(actual: &Array1<f64>, expected: &Array1<f64>) -> f64 {
     actual
         .iter()
         .zip(expected.iter())
@@ -18,11 +18,10 @@ pub fn compute_residual(actual: Array1<f64>, expected: Array1<f64>) -> f64 {
         .unwrap_or(0.0)
 }
 
-// #[test]
-// fn test_compute_residual() {
-//     let width = 3;
-//     let vx = vec![1.0, 2.0, 3.0];
-//     let vy = vec![3.0, 2.0, 1.0];
-//     let r = compute_residual(width, &vx, &vy);
-//     assert_eq!(r, 2.0);
-// }
+#[test]
+fn test_compute_residual() {
+    let vx = array![1.0, 2.0, 3.0];
+    let vy = array![3.0, 2.0, 1.0];
+    let r = compute_residual(&vx, &vy);
+    assert_eq!(r, 2.0);
+}
