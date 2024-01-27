@@ -1,4 +1,5 @@
-use ndarray::Array1;
+#[allow(unused_imports)]
+use ndarray::{array, Array1};
 use sprs::CsMat;
 
 /// Generates the initial mesh and its associated values.

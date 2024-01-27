@@ -1,4 +1,5 @@
-use ndarray::Array1;
+#[allow(unused_imports)]
+use ndarray::{array, Array1};
 
 /// A method to compute the 1-norm difference between two vectors.
 ///
