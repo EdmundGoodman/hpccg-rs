@@ -6,10 +6,9 @@ use sprs::CsVec;
 /// between two values of the same index across the two vectors.
 ///
 /// # Arguments
-/// * `_width` - The width of both input vectors.
 /// * `actual` - The vector of actual values.
 /// * `expected` - The vector of expected values.
-pub fn compute_residual(_width: usize, actual: CsVec<f64>, expected: CsVec<f64>) -> f64 {
+pub fn compute_residual(actual: CsVec<f64>, expected: CsVec<f64>) -> f64 {
     actual
         .to_dense()
         .iter()

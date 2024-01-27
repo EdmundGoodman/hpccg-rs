@@ -3,12 +3,11 @@ use sprs::CsVec;
 /// A function to compute the sum of two scaled vectors.
 ///
 /// # Arguments
-/// * `width` - The width of both input vectors.
 /// * `alpha` - The scaling factor for the first vector.
 /// * `x` - The first input vector.
 /// * `beta` - The scaling factor for the second vector.
 /// * `y` - The second input vector.
-pub fn waxpby(_width: usize, alpha: f64, x: &CsVec<f64>, beta: f64, y: &CsVec<f64>) -> CsVec<f64> {
+pub fn waxpby(alpha: f64, x: &CsVec<f64>, beta: f64, y: &CsVec<f64>) -> CsVec<f64> {
     x.map(|i| i * alpha) + y.map(|i| i * beta)
     // (x * alpha) + (beta * y)
     // if alpha == 1.0 {

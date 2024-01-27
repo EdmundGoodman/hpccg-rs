@@ -81,7 +81,7 @@ pub fn solver(
 
     // `p` is of length `ncols`, so copy `x` to `p` for sparse matrix-vector operation
     tick(&mut t_total);
-    p = waxpby(result.nnz(), 1.0, &result, 0.0, &b);
+    p = waxpby(1.0, &result, 0.0, &b);
     tock(&t_total, &mut t_waxpby);
 
     tick(&mut t_total);
@@ -89,11 +89,11 @@ pub fn solver(
     tock(&t_total, &mut t_sparsemv);
 
     tick(&mut t_total);
-    r = waxpby(result.nnz(), 1.0, &b, -1.0, &Ap);
+    r = waxpby(1.0, &b, -1.0, &Ap);
     tock(&t_total, &mut t_waxpby);
 
     tick(&mut t_total);
-    rtrans = ddot(r.nnz(), &r, &r);
+    rtrans = ddot(&r, &r);
     tock(&t_total, &mut t_ddot);
 
     normr = rtrans.sqrt();
@@ -107,16 +107,16 @@ pub fn solver(
 
         if k == 1 {
             tick(&mut t_total);
-            p = waxpby(nrow, 1.0, &r, 0.0, &r);
+            p = waxpby(1.0, &r, 0.0, &r);
             tock(&t_total, &mut t_waxpby);
         } else {
             oldrtrans = rtrans;
             tick(&mut t_total);
-            rtrans = ddot(nrow, &r, &r);
+            rtrans = ddot(&r, &r);
             tock(&t_total, &mut t_ddot);
             let beta = rtrans / oldrtrans;
             tick(&mut t_total);
-            p = waxpby(nrow, 1.0, &r, beta, &p);
+            p = waxpby(1.0, &r, beta, &p);
             tock(&t_total, &mut t_waxpby);
         }
 
@@ -130,13 +130,13 @@ pub fn solver(
         tock(&t_total, &mut t_sparsemv);
 
         tick(&mut t_total);
-        let alpha = ddot(r.nnz(), &p, &Ap);
+        let alpha = ddot(&p, &Ap);
         tock(&t_total, &mut t_ddot);
 
         let alpha = rtrans / alpha;
         tick(&mut t_total);
-        result = waxpby(nrow, 1.0, &result, alpha, &p);
-        r = waxpby(nrow, 1.0, &r, -alpha, &Ap);
+        result = waxpby(1.0, &result, alpha, &p);
+        r = waxpby(1.0, &r, -alpha, &Ap);
         tock(&t_total, &mut t_waxpby);
         iteration = k;
     }
