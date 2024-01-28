@@ -38,6 +38,7 @@ converting pointer arithmetic to array indexing - does this incur a performance 
     - Consider additional using direct ffi::MPI ?
   - Fix and PR docs and CMakelist for original code
   - Investigate using sprs matrix library
+    - Done, no sparse/dense parallelisation so slow
   - Investigate auto-vectorisation
   - Investigate zero-cost abstractions
   - Unit testing framework improve ergonomics
