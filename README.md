@@ -56,3 +56,7 @@ converting pointer arithmetic to array indexing - does this incur a performance 
     - runs unit tests on C++
   - cargo test runs as normal (or adds ffi_test alongside integration/unit/doc?)
   - Consider wrapper for autocxx for this purpose? macros in test?
+
+
+
+GCC vs clang comparison? Could impact iterators
