@@ -2,14 +2,14 @@ pub mod compute_residual;
 mod ddot;
 mod mytimer;
 pub mod sparse_matrix;
-mod sparsmv;
+mod sparsemv;
 mod waxpby;
 
 pub use compute_residual::compute_residual;
 use ddot::ddot;
 use mytimer::mytimer;
 pub use sparse_matrix::generate_matrix;
-use sparsmv::sparsemv;
+use sparsemv::sparsemv;
 use waxpby::waxpby;
 
 use ndarray::Array1;

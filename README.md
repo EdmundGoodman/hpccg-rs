@@ -72,5 +72,6 @@ converting pointer arithmetic to array indexing - does this incur a performance 
 - start kokkos implementation
 - (raw ffi:mpi implementation?)
 - (iterators aren't zero cost abstraction)
+- (work out what normr rtrans etc mean)
 
 GCC vs clang comparison? Could impact iterators
