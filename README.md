@@ -57,12 +57,11 @@ converting pointer arithmetic to array indexing - does this incur a performance 
   - cargo test runs as normal (or adds ffi_test alongside integration/unit/doc?)
   - Consider wrapper for autocxx for this purpose? macros in test?
 
-
-
 ## Things to do this week
 
 - rsmpi on DCS
   - works, reply to tech team
+  - add timing code
 - benchmarking on DCS
   - update scripts to do all combinations, incl. compiler backends etc.
 - benchmarking on SCRTP
@@ -72,6 +71,5 @@ converting pointer arithmetic to array indexing - does this incur a performance 
 - start kokkos implementation
 - (raw ffi:mpi implementation?)
 - (iterators aren't zero cost abstraction)
-
 
 GCC vs clang comparison? Could impact iterators

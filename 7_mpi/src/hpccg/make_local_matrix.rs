@@ -13,26 +13,72 @@ const DEBUG: bool = false;
 const DEBUG_DETAILS: bool = false;
 
 pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
-    let mut externals: HashMap<usize, usize> = HashMap::new();
-    let mut num_external: usize = 0;
+    let (externals, num_external) = scan_and_transform_local(matrix, world);
+    matrix.num_external = num_external;
 
+    let external_processor = find_accessed_processors(matrix, world);
+
+    let new_external_processor =
+        sift_external_elements(matrix, externals, external_processor, world);
+
+    let (num_recv_neighbors, num_send_neighbors, total_to_be_sent) =
+        count_num_neighbors(matrix, &new_external_processor, world);
+    matrix.total_to_be_sent = total_to_be_sent;
+    matrix.local_ncol = matrix.local_nrow + matrix.num_external;
+    matrix.send_buffer = vec![0.0; matrix.total_to_be_sent];
+
+    let (mut recv_list, send_list, mpi_my_tag) = make_list_of_neighbors(
+        matrix,
+        &new_external_processor,
+        num_recv_neighbors,
+        num_send_neighbors,
+        world,
+    );
+
+    let (num_recv_neighbors, num_send_neighbors) = compare_send_recv_lists(
+        &mut recv_list,
+        &send_list,
+        num_recv_neighbors,
+        num_send_neighbors,
+        world,
+    );
+    matrix.num_send_neighbors = num_send_neighbors;
+
+    let new_external = create_ordered_new_external(matrix);
+
+    let mpi_my_tag = send_processor_global_index(
+        matrix,
+        mpi_my_tag,
+        &recv_list,
+        num_recv_neighbors,
+        num_send_neighbors,
+        &new_external_processor,
+        world,
+    );
+
+    let _ = build_elements_to_send_list(
+        matrix,
+        mpi_my_tag,
+        &recv_list,
+        num_recv_neighbors,
+        new_external,
+        &new_external_processor,
+        world,
+    );
+
+    // println!("{:?}", matrix);
+}
+
+/// Scan the indices and transform to local
+pub fn scan_and_transform_local(
+    matrix: &mut SparseMatrix,
+    world: &impl Communicator,
+) -> (HashMap<usize, usize>, usize) {
     let size = world.size() as usize;
     let rank = world.rank() as usize;
 
-    // We need to convert the index values for the rows on this processor
-    // to a local index space. We need to:
-    // - Determine if each index reaches to a local value or external value
-    // - If local, subtract start_row from index value to get local index
-    // - If external, find out if it is already accounted for.
-    //   - If so, then do nothing,
-    //   - otherwise
-    //     - add it to the list of external indices,
-    //     - find out which processor owns the value.
-    //     - Set up communication for sparse MV operation.
-
-    ///////////////////////////////////////////
-    // Scan the indices and transform to local
-    ///////////////////////////////////////////
+    let mut externals: HashMap<usize, usize> = HashMap::new();
+    let mut num_external: usize = 0;
 
     for i in 0..matrix.local_nrow {
         let row_start_ind = matrix.row_start_inds[i];
@@ -65,56 +111,41 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         }
     }
 
-    // println!("rank={}, num_external={}", rank, num_external);
-    // println!("rank={}, externals={:?}", rank, &externals);
-
     // TODO: Add debug timer
     if DEBUG {
         println!("Processor {rank} of {size}: Number of external equations = {num_external}");
     }
 
-    // TODO: Switch to multiple smaller function units called in sequence
-    // let (externals, mut num_external) = scan_and_transform_local(matrix, world);
+    (externals, num_external)
+}
 
-    ////////////////////////////////////////////////////////////////////////////
-    // Go through list of externals to find out which processors must be accessed.
-    ////////////////////////////////////////////////////////////////////////////
+/// Go through list of externals to find out which processors must be accessed.
+///
+/// The `all_reduce` call sends the start_row of each ith processor to the ith
+/// entry of global_index_offset on all processors.
+/// Thus, each processor know the range of indices owned by all
+/// other processors.
+/// Note:  There might be a better algorithm for doing this, but this
+///        will work...
+fn find_accessed_processors(matrix: &mut SparseMatrix, world: &impl Communicator) -> Vec<usize> {
+    let size = world.size() as usize;
+    let rank = world.rank() as usize;
 
-    let num_external = num_external; // TODO: Make immutable for debugging...
-    matrix.num_external = num_external;
     let mut tmp_buffer: Vec<usize> = vec![0; size];
     // Needs to be of the correct size already! (not `Vec::with_capacity(size);`)
     let mut global_index_offsets: Vec<usize> = vec![0; size];
 
     tmp_buffer[rank] = matrix.start_row;
 
-    // This call sends the start_row of each ith processor to the ith
-    // entry of global_index_offset on all processors.
-    // Thus, each processor know the range of indices owned by all
-    // other processors.
-    // Note:  There might be a better algorithm for doing this, but this
-    //        will work...
-
-    // MPI_Allreduce(tmp_buffer, global_index_offsets, size, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     world.all_reduce_into(
         &tmp_buffer,
         &mut global_index_offsets,
         SystemOperation::sum(),
     );
 
-    // println!("rank={}, tmp_buffer={:?}", rank, &tmp_buffer);
-    // println!(
-    //     "rank={}, global_index_offsets={:?}",
-    //     rank, &global_index_offsets
-    // );
-    // println!(
-    //     "rank={}, matrix.external_index={:?}",
-    //     rank, &matrix.external_index
-    // );
+    let mut external_processor = Vec::with_capacity(matrix.num_external);
 
-    let mut external_processor = Vec::with_capacity(num_external);
-
-    for i in 0..num_external {
+    for i in 0..matrix.num_external {
         let cur_ind = matrix.external_index[i];
         for j in (0..size).rev() {
             if global_index_offsets[j] <= cur_ind {
@@ -124,28 +155,34 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         }
     }
 
-    // println!(
-    //     "rank={}, external_processor={:?}",
-    //     rank, &external_processor
-    // );
+    // (tmp_buffer, global_index_offsets, external_processor)
+    // TODO: global_index_offsets is unused elsewhere, and tmp_buffer should be remade
+    external_processor
+}
 
-    ////////////////////////////////////////////////////////////////////////////
-    // Sift through the external elements. For each newly encountered external
-    // point assign it the next index in the sequence. Then look for other
-    // external elements who are update by the same node and assign them the next
-    // set of index numbers in the sequence (ie. elements updated by the same node
-    // have consecutive indices).
-    ////////////////////////////////////////////////////////////////////////////
+/// Sift through the external elements. For each newly encountered external
+/// point assign it the next index in the sequence. Then look for other
+/// external elements who are update by the same node and assign them the next
+/// set of index numbers in the sequence (ie. elements updated by the same node
+/// have consecutive indices).
+fn sift_external_elements(
+    matrix: &mut SparseMatrix,
+    externals: HashMap<usize, usize>,
+    external_processor: Vec<usize>,
+    world: &impl Communicator,
+) -> Vec<usize> {
+    let size = world.size() as usize;
+    let rank = world.rank() as usize;
 
     let mut count = matrix.local_nrow as i32;
-    matrix.external_local_index = vec![-1; num_external];
+    matrix.external_local_index = vec![-1; matrix.num_external];
 
-    for i in 0..num_external {
+    for i in 0..matrix.num_external {
         if matrix.external_local_index[i] == -1 {
             matrix.external_local_index[i] = count;
             count += 1;
 
-            for j in i + 1..num_external {
+            for j in i + 1..matrix.num_external {
                 if external_processor[j] == external_processor[i] {
                     matrix.external_local_index[j] = count;
                     count += 1;
@@ -154,43 +191,27 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         }
     }
 
-    // println!(
-    //     "rank={}, matrix.external_local_index={:?}",
-    //     rank, &matrix.external_local_index
-    // );
-
     for i in 0..matrix.local_nrow {
         let row_start_ind = matrix.row_start_inds[i];
         for j in 0..matrix.nnz_in_row[i] {
             let poss_cur_ind = matrix.list_of_inds[row_start_ind + j];
             if poss_cur_ind < 0 {
                 let cur_ind = (-poss_cur_ind - 1) as usize;
-                // dbg!(externals[&cur_ind]);
                 matrix.list_of_inds[row_start_ind + j] =
                     matrix.external_local_index[externals[&cur_ind]]
             }
         }
     }
 
-    // println!(
-    //     "rank={}, matrix.external_local_index={:?}",
-    //     rank, &matrix.external_local_index
-    // );
+    let mut new_external_processor = vec![0usize; matrix.num_external];
 
-    let mut new_external_processor = vec![0usize; num_external];
-
-    for i in 0..num_external {
+    for i in 0..matrix.num_external {
         new_external_processor[matrix.external_local_index[i] as usize - matrix.local_nrow] =
             external_processor[i];
     }
 
-    // println!(
-    //     "rank={}, new_external_processor={:?}",
-    //     rank, &new_external_processor
-    // );
-
     if DEBUG_DETAILS {
-        for i in 0..num_external {
+        for i in 0..matrix.num_external {
             println!(
                 "Processor {rank} of {size}: external processor[{i}] = {}",
                 external_processor[i]
@@ -202,25 +223,33 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////
-    //
-    // Count the number of neighbors from which we receive information to update
-    // our external elements. Additionally, fill the array tmp_neighbors in the
-    // following way:
-    //      tmp_neighbors[i] = 0   ==>  No external elements are updated by
-    //                              processor i.
-    //      tmp_neighbors[i] = x   ==>  (x-1)/size elements are updated from
-    //                              processor i.
-    //
-    ////////////////////////////////////////////////////////////////////////////
+    new_external_processor
+}
 
+/// Count the number of neighbors from which we receive information to update
+/// our external elements. Additionally, fill the array tmp_neighbors in the
+/// following way:
+///      tmp_neighbors[i] = 0   ==>  No external elements are updated by
+///                              processor i.
+///      tmp_neighbors[i] = x   ==>  (x-1)/size elements are updated from
+///                              processor i.
+///
+fn count_num_neighbors(
+    matrix: &mut SparseMatrix,
+    new_external_processor: &Vec<usize>,
+    world: &impl Communicator,
+) -> (usize, usize, usize) {
+    let size = world.size() as usize;
+    let rank = world.rank() as usize;
+
+    let mut tmp_buffer: Vec<usize> = vec![0; size];
     let mut tmp_neighbors = vec![0; size];
 
     let mut num_recv_neighbors = 0;
     // let mut length = 1; // TODO: This is moved down and made not immutable?
 
-    for i in 0..num_external {
-        if (tmp_neighbors[new_external_processor[i]] == 0) {
+    for i in 0..matrix.num_external {
+        if tmp_neighbors[new_external_processor[i]] == 0 {
             num_recv_neighbors += 1;
             tmp_neighbors[new_external_processor[i]] = 1;
         }
@@ -257,19 +286,24 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     // TODO: Only needed in debug mode? Also add timers
     world.barrier();
 
-    /////////////////////////////////////////////////////////////////////////
-    //
-    // Make a list of the neighbors that will send information to update our
-    // external elements (in the order that we will receive this information).
-    //
-    /////////////////////////////////////////////////////////////////////////
+    (num_recv_neighbors, num_send_neighbors, total_to_be_sent)
+}
 
+/// Make a list of the neighbors that will send information to update our
+/// external elements (in the order that we will receive this information).
+fn make_list_of_neighbors(
+    matrix: &mut SparseMatrix,
+    new_external_processor: &Vec<usize>,
+    num_recv_neighbors: usize,
+    num_send_neighbors: usize,
+    world: &impl Communicator,
+) -> (Vec<usize>, Vec<usize>, i32) {
     let mut recv_list = vec![];
     // TODO: This is a bug in the actual version! If n = 1, index out of bounds
-    if num_external > 0 {
+    if matrix.num_external > 0 {
         recv_list.push(new_external_processor[0]);
     }
-    for i in 1..num_external {
+    for i in 1..matrix.num_external {
         if new_external_processor[i - 1] != new_external_processor[i] {
             recv_list.push(new_external_processor[i]);
         }
@@ -305,18 +339,27 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         send_list[i] = status.source_rank() as usize;
     }
 
-    // println!("rank={}, send_list={:?}", rank, &send_list);
+    (recv_list, send_list, mpi_my_tag)
 
-    /////////////////////////////////////////////////////////////////////////
-    //
-    //  Compare the two lists. In most cases they should be the same.
-    //  However, if they are not then add new entries to the recv list
-    //  that are in the send list (but not already in the recv list).
-    //
-    /////////////////////////////////////////////////////////////////////////
+    // println!("rank={}, send_list={:?}", rank, &send_list);
+}
+
+///  Compare the two lists. In most cases they should be the same.
+///  However, if they are not then add new entries to the recv list
+///  that are in the send list (but not already in the recv list).
+fn compare_send_recv_lists(
+    recv_list: &mut Vec<usize>,
+    send_list: &Vec<usize>,
+    num_recv_neighbors: usize,
+    num_send_neighbors: usize,
+    world: &impl Communicator,
+) -> (usize, usize) {
+    let size = world.size() as usize;
+    let rank = world.rank() as usize;
 
     // println!("rank={}, num_recv_neighbors={}", rank, num_recv_neighbors);
     // println!("rank={}, recv_list={:?}", rank, &recv_list);
+    let mut num_recv_neighbors = num_recv_neighbors;
 
     for j in 0..num_send_neighbors {
         let mut found = 0;
@@ -348,34 +391,35 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         panic!("Must increase `MAX_NUM_MESSAGES` from {MAX_NUM_MESSAGES}");
     }
 
-    /////////////////////////////////////////////////////////////////////////
-    // Start filling HPC_Sparse_Matrix struct
-    /////////////////////////////////////////////////////////////////////////
+    (num_recv_neighbors, num_send_neighbors)
+}
 
-    matrix.total_to_be_sent = total_to_be_sent;
-    // matrix.elements_to_send =
-    // let mut elements_to_send = vec![0; total_to_be_sent];
-    // let mut elements_to_send = vec![];
-
-    // Create 'new_external' which explicitly put the external elements in the
-    // order given by 'external_local_index'
-
-    let mut new_external = vec![0; num_external];
-    for i in 0..num_external {
+/// Create 'new_external' which explicitly put the external elements in the
+/// order given by 'external_local_index'
+fn create_ordered_new_external(matrix: &mut SparseMatrix) -> Vec<usize> {
+    let mut new_external = vec![0; matrix.num_external];
+    for i in 0..matrix.num_external {
         new_external[matrix.external_local_index[i] as usize - matrix.local_nrow] =
             matrix.external_index[i];
     }
 
-    // println!("rank={}, num_external={}", rank, num_external);
+    // println!("rank={}, matrix.num_external={}", rank, matrix.num_external);
     // println!("rank={}, new_external={:?}", rank, &new_external);
 
-    /////////////////////////////////////////////////////////////////////////
-    //
-    // Send each processor the global index list of the external elements in the
-    // order that I will want to receive them when updating my external elements
-    //
-    /////////////////////////////////////////////////////////////////////////
+    new_external
+}
 
+/// Send each processor the global index list of the external elements in the
+/// order that I will want to receive them when updating my external elements
+fn send_processor_global_index(
+    matrix: &mut SparseMatrix,
+    mpi_my_tag: i32,
+    recv_list: &Vec<usize>,
+    num_recv_neighbors: usize,
+    num_send_neighbors: usize,
+    new_external_processor: &Vec<usize>,
+    world: &impl Communicator,
+) -> i32 {
     let mpi_my_tag = mpi_my_tag + 1;
 
     // First post receives
@@ -400,10 +444,10 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
 
         // go through list of external elements until updating
         // processor changes
-        while (j < num_external) && (new_external_processor[j] == recv_list[i]) {
+        while (j < matrix.num_external) && (new_external_processor[j] == recv_list[i]) {
             newlength += 1;
             j += 1;
-            if j == num_external {
+            if j == matrix.num_external {
                 break;
             }
         }
@@ -434,12 +478,20 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
     //     "rank={}, matrix.send_length={:?}",
     //     rank, &matrix.send_length
     // );
+    mpi_my_tag
+}
 
-    ///////////////////////////////////////////////////////////////////
-    // Build "elements_to_send" list.  These are the x elements I own
-    // that need to be sent to other processors.
-    ///////////////////////////////////////////////////////////////////
-
+/// Build "elements_to_send" list.  These are the x elements I own
+/// that need to be sent to other processors.
+fn build_elements_to_send_list(
+    matrix: &mut SparseMatrix,
+    mpi_my_tag: i32,
+    recv_list: &Vec<usize>,
+    num_recv_neighbors: usize,
+    new_external: Vec<usize>,
+    new_external_processor: &Vec<usize>,
+    world: &impl Communicator,
+) -> i32 {
     let mpi_my_tag = mpi_my_tag + 1;
 
     // let mut result_slices: Vec<&mut Vec<i32>> = (0..num_recv_neighbors)
@@ -448,7 +500,7 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
 
     let mut result_slices = vec![];
     for i in 0..num_recv_neighbors {
-        let mut slice = vec![0; matrix.send_length[i]];
+        let slice = vec![0; matrix.send_length[i]];
         result_slices.push(slice);
     }
 
@@ -467,16 +519,17 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         let mut j = 0;
         for i in 0..num_recv_neighbors {
             let start = j;
-            let mut newlength: usize = 0;
+            // TODO: Fix in C++ code, this is never used
+            // let mut newlength: usize = 0;
 
             // Go through list of external elements
             // until updating processor changes.  This is redundant, but
             // saves us from recording this information.
 
-            while (j < num_external) && (new_external_processor[j] == recv_list[i]) {
-                newlength += 1;
+            while (j < matrix.num_external) && (new_external_processor[j] == recv_list[i]) {
+                // newlength += 1;
                 j += 1;
-                if j == num_external {
+                if j == matrix.num_external {
                     break;
                 }
             }
@@ -488,11 +541,11 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
                 .collect::<Vec<i32>>();
 
             // println!(
-            //     "rank={}, start={}, j={}, num_external={}, size={}, target={}, data={:?}",
+            //     "rank={}, start={}, j={}, matrix.num_external={}, size={}, target={}, data={:?}",
             //     rank,
             //     start,
             //     j,
-            //     num_external,
+            //     matrix.num_external,
             //     new_external.len(),
             //     recv_list[i],
             //     data_to_send
@@ -505,7 +558,8 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         }
 
         while coll.incomplete() > 0 {
-            let (request_index, status, _) = coll.wait_any().expect("MPI_Wait error");
+            // let (request_index, status, _) =
+            coll.wait_any().expect("MPI_Wait error");
             // println!(
             //     "rank={}, request_index={} | {:?}",
             //     rank, request_index, status
@@ -524,144 +578,5 @@ pub fn make_local_matrix(matrix: &mut SparseMatrix, world: &impl Communicator) {
         }
     }
 
-    // println!("rank={}, elements_to_send={:?}", rank, &elements_to_send);
-
-    // #[derive(Equivalence, PartialEq, Debug)]
-    // struct MpiSendVec(Vec<i32>);
-
-    // // let mut j = 0;
-    // let mut elements_to_send_futures: Vec<ReceiveFuture<MpiSendVec>> = vec![];
-    // for i in 0..num_recv_neighbors {
-    //     elements_to_send_futures.push(
-    //         world
-    //             .process_at_rank(matrix.send_length[i] as i32)
-    //             .immediate_receive_with_tag(mpi_my_tag),
-    //     );
-    //     // j += matrix.send_length[i];
-    // }
-
-    // let mut j = 0;
-    // for i in 0..num_recv_neighbors {
-    //     let start = j;
-    //     let mut newlength: usize = 0;
-
-    //     // Go through list of external elements
-    //     // until updating processor changes.  This is redundant, but
-    //     // saves us from recording this information.
-
-    //     while (j < num_external) && (new_external_processor[j] == recv_list[i]) {
-    //         newlength += 1;
-    //         j += 1;
-    //         if j == num_external {
-    //             break;
-    //         }
-    //     }
-
-    //     let data_to_send = MpiSendVec(
-    //         new_external[start..j - start]
-    //             .iter()
-    //             .map(|&x| x as i32)
-    //             .collect::<Vec<i32>>(),
-    //     );
-    //     let _ = world
-    //         .process_at_rank(recv_list[i] as i32)
-    //         .send_with_tag(&data_to_send, mpi_my_tag);
-    // }
-
-    // // receive from each neighbor the global index list of external elements
-
-    // let mut j = 0;
-    // print!("rank={}, lengths=[", rank);
-    // for (i, element_to_send_future) in elements_to_send_futures.into_iter().enumerate() {
-    //     let (msg, _) = element_to_send_future.get();
-    //     print!("{:?}, ", msg);
-    //     for k in 0..matrix.send_length[i] {
-    //         matrix.elements_to_send[k + j] = msg[k];
-    //     }
-    //     j += matrix.send_length[i];
-    // }
-    // println!("]");
-
-    // for i in 0..matrix.total_to_be_sent {
-    //     elements_to_send[i] -= matrix.start_row;
-    // }
-
-    ////////////////
-    // Finish up !!
-    ////////////////
-
-    matrix.num_send_neighbors = num_send_neighbors;
-    matrix.local_ncol = matrix.local_nrow + num_external;
-    matrix.send_buffer = vec![0.0; matrix.total_to_be_sent];
-
-    // println!("{:?}", matrix);
+    mpi_my_tag
 }
-
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-
-// pub fn scan_and_transform_local(
-//     matrix: &mut SparseMatrix,
-//     world: &impl Communicator,
-// ) -> (HashMap<usize, usize>, usize) {
-//     let mut externals: HashMap<usize, usize> = HashMap::new();
-//     let mut num_external: usize = 0;
-
-//     let size = world.size() as usize;
-//     let rank = world.rank() as usize;
-
-//     ///////////////////////////////////////////
-//     // Scan the indices and transform to local
-//     ///////////////////////////////////////////
-
-//     for i in 0..matrix.local_nrow {
-//         let row_start_ind = matrix.row_start_inds[i];
-//         for j in 0..matrix.nnz_in_row[i] {
-//             let cur_ind = matrix.list_of_inds[row_start_ind + j] as usize;
-//             if DEBUG_DETAILS {
-//                 println!("Process {rank} of {size} getting index {cur_ind} in local row {i}");
-//             }
-//             if matrix.start_row <= cur_ind && cur_ind <= matrix.stop_row {
-//                 matrix.list_of_inds[row_start_ind + j] -= matrix.start_row as i32;
-//             } else {
-//                 // Must find out if we have already set up this point
-//                 if externals.contains_key(&cur_ind) {
-//                     // Mark index as external by adding 1 and negating it
-//                     matrix.list_of_inds[row_start_ind + j] =
-//                         -(matrix.list_of_inds[row_start_ind + j] + 1);
-//                 } else {
-//                     num_external = num_external + 1;
-//                     externals.insert(cur_ind, num_external);
-//                     if num_external <= MAX_EXTERNAL {
-//                         matrix.external_index.push(cur_ind);
-//                         // Mark index as external by adding 1 and negating it
-//                         matrix.list_of_inds[row_start_ind + j] =
-//                             -(matrix.list_of_inds[row_start_ind + j] + 1);
-//                     } else {
-//                         panic!("Must increase `MAX_EXTERNAL` from {MAX_EXTERNAL}");
-//                     }
-//                 }
-//             }
-//         }
-//     }
-
-//     // TODO: Add debug timer
-//     if DEBUG {
-//         println!("Processor {rank} of {size}: Number of external equations = {num_external}");
-//     }
-
-//     (externals, num_external)
-// }
