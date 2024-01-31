@@ -2,7 +2,7 @@ pub mod compute_residual;
 mod ddot;
 mod exchange_externals;
 pub mod make_local_matrix;
-mod mytimer;
+pub mod mytimer;
 pub mod sparse_matrix;
 mod sparsmv;
 mod waxpby;
@@ -18,7 +18,8 @@ use mpi::traits::*;
 pub use compute_residual::compute_residual;
 use ddot::ddot;
 use exchange_externals::exchange_externals;
-use mytimer::mytimer;
+pub use make_local_matrix::make_local_matrix;
+pub use mytimer::mytimer;
 pub use sparse_matrix::SparseMatrix;
 use sparsmv::sparsemv;
 use waxpby::waxpby;
@@ -75,14 +76,12 @@ pub fn solver(
 
     let mut result = x.to_owned();
     let mut iteration = 0;
-    // TODO: Work out what these variable names mean
     let mut normr = 0.0;
     let mut rtrans: f64 = 0.0;
     let mut oldrtrans: f64 = 0.0;
 
     let rank = world.rank();
 
-    // TODO: Propagate this across all other versions
     let print_freq = (max_iterations / 10).max(1).min(50);
 
     // `p` is of length `ncols`, so copy `x` to `p` for sparse matrix-vector operation
@@ -103,7 +102,7 @@ pub fn solver(
     tock(&t_total, &mut t_waxpby);
 
     tick(&mut t_total);
-    rtrans = ddot(r.len(), &r, &r, world);
+    rtrans = ddot(r.len(), &r, &r, &mut t_mpi_allreduce, world);
     tock(&t_total, &mut t_ddot);
 
     normr = rtrans.sqrt();
@@ -124,7 +123,7 @@ pub fn solver(
         } else {
             oldrtrans = rtrans;
             tick(&mut t_total);
-            rtrans = ddot(nrow, &r, &r, world);
+            rtrans = ddot(nrow, &r, &r, &mut t_mpi_allreduce, world);
             tock(&t_total, &mut t_ddot);
             let beta = rtrans / oldrtrans;
             tick(&mut t_total);
@@ -146,7 +145,7 @@ pub fn solver(
         tock(&t_total, &mut t_sparsemv);
 
         tick(&mut t_total);
-        let alpha = ddot(r.len(), &p, &Ap, world);
+        let alpha = ddot(r.len(), &p, &Ap, &mut t_mpi_allreduce, world);
         tock(&t_total, &mut t_ddot);
 
         let alpha = rtrans / alpha;

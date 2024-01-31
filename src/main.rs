@@ -1,5 +1,4 @@
-use crate::hpccg::make_local_matrix::make_local_matrix;
-#[allow(unused_imports)]
+use mpi::collective::SystemOperation;
 use mpi::traits::*;
 
 pub mod hpccg;
@@ -32,15 +31,26 @@ fn main() {
     let tolerance = 0.0;
 
     // TODO: Add timer for overhead making the matrix
-    make_local_matrix(&mut matrix, &world);
+    let t6 = hpccg::mytimer();
+    hpccg::make_local_matrix(&mut matrix, &world);
+    let t6 = hpccg::mytimer() - t6;
 
-    let (result, iterations, normr, times) =
+    let (result, iterations, normr, mut times) =
         hpccg::solver(&mut matrix, &rhs, &guess, max_iter, tolerance, &world);
 
     let ddot_flops = iterations as i64 * 4 * matrix.total_nrow as i64;
     let waxpby_flops = iterations as i64 * 6 * matrix.total_nrow as i64;
     let sparsemv_flops = iterations as i64 * 2 * matrix.total_nnz as i64;
     let total_flops = ddot_flops + waxpby_flops + sparsemv_flops;
+
+    times.push(t6);
+    let total_sparsemv_time = times[3] + times[5] + times[6];
+    let mut t4min = 0.0;
+    let mut t4max = 0.0;
+    let mut t4avg = 0.0;
+    world.all_reduce_into(&times[4], &mut t4min, SystemOperation::min());
+    world.all_reduce_into(&times[4], &mut t4max, SystemOperation::max());
+    world.all_reduce_into(&times[4], &mut t4avg, SystemOperation::sum());
 
     if world.rank() == 0 {
         let residual = hpccg::compute_residual(matrix.local_nrow, &result, &exact);
@@ -71,6 +81,36 @@ fn main() {
         println!(
             "  SPARSEMV: {:.4}",
             (sparsemv_flops as f64) / times[3] / 1.0e6
+        );
+        println!("DDOT Timing Variations:");
+        println!("  Min DDOT MPI_Allreduce time: {t4min:.4}");
+        println!("  Max DDOT MPI_Allreduce time: {t4max:.4}");
+        println!("  Avg DDOT MPI_Allreduce time: {t4avg:.4}");
+        println!("SPARSEMV OVERHEADS:");
+        println!(
+            "  SPARSEMV MFLOPS W OVERHEAD: {:.4}",
+            (sparsemv_flops as f64) / total_sparsemv_time / 1.0e6
+        );
+        println!(
+            "  SPARSEMV PARALLEL OVERHEAD Time: {:.4}",
+            times[5] + times[6]
+        );
+        println!(
+            "  SPARSEMV PARALLEL OVERHEAD Pct: {:.4}",
+            ((times[5] + times[6]) / total_sparsemv_time) * 100.0
+        );
+        println!("  SPARSEMV PARALLEL OVERHEAD Setup Time: {:.4}", times[6]);
+        println!(
+            "  SPARSEMV PARALLEL OVERHEAD Setup Pct: {:.4}",
+            (times[6] / total_sparsemv_time) * 100.0
+        );
+        println!(
+            "  SPARSEMV PARALLEL OVERHEAD Bdry Exch Time: {:.4}",
+            times[5]
+        );
+        println!(
+            "  SPARSEMV PARALLEL OVERHEAD Bdry Exch Pct: {:.4}",
+            (times[5] / total_sparsemv_time) * 100.0
         );
         println!("Difference between computed and exact = {residual:.5e}.");
     }
