@@ -61,6 +61,7 @@ converting pointer arithmetic to array indexing - does this incur a performance 
 
 ## Things to do this week
 
+- read perf book
 - rsmpi on DCS
   - works, reply to tech team
 - benchmarking on DCS
