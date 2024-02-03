@@ -2,19 +2,19 @@ pub mod compute_residual;
 mod ddot;
 mod mytimer;
 pub mod sparse_matrix;
-mod sparsmv;
+mod sparsemv;
 mod waxpby;
 
 pub use compute_residual::compute_residual;
 use ddot::ddot;
 use mytimer::mytimer;
 pub use sparse_matrix::SparseMatrix;
-use sparsmv::sparsemv;
+use sparsemv::sparsemv;
 use waxpby::waxpby;
 
 pub mod hpccg_internals {
     pub use super::ddot::ddot;
-    pub use super::sparsmv::sparsemv;
+    pub use super::sparsemv::sparsemv;
     pub use super::waxpby::waxpby;
 }
 
@@ -70,18 +70,11 @@ pub fn solver(
 
     let mut result = x.to_owned();
     let mut iteration = 0;
-    // TODO: Work out what these variable names mean
     let mut normr = 0.0;
     let mut rtrans: f64 = 0.0;
     let mut oldrtrans: f64 = 0.0;
 
-    // let print_freq = (max_iter/10).max(1).min(50);
-    let mut print_freq = max_iterations / 10;
-    if print_freq > 50 {
-        print_freq = 50;
-    } else if print_freq < 1 {
-        print_freq = 1;
-    }
+    let print_freq = (max_iterations/10).max(1).min(50);
 
     // `p` is of length `ncols`, so copy `x` to `p` for sparse matrix-vector operation
     tick(&mut t_total);

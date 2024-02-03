@@ -72,5 +72,5 @@ converting pointer arithmetic to array indexing - does this incur a performance 
 - [ ] read perf book
 - [ ] Optional: raw ffi:mpi implementation?
 - [ ] Optional: iterators aren't zero cost abstraction
-
-GCC vs clang comparison? Could impact iterators
+- [ ] Optional: work out what normr rtrans etc mean
+- [ ] GCC vs clang comparison? Could impact iterators
