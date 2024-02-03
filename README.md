@@ -59,18 +59,18 @@ converting pointer arithmetic to array indexing - does this incur a performance 
 
 ## Things to do this week
 
-- read perf book
-- rsmpi on DCS
-  - works, reply to tech team
-  - add timing code
-- benchmarking on DCS
-  - update scripts to do all combinations, incl. compiler backends etc.
-- benchmarking on SCRTP
-  - get rustup, then run same script as dcs
-- rayon+mpi implementation
-- roofline curves and stream benchmark
-- start kokkos implementation
-- (raw ffi:mpi implementation?)
-- (iterators aren't zero cost abstraction)
+- [x] rsmpi on DCS
+  - [x] works, reply to tech team
+  - [x] add timing code
+- [ ] rayon+mpi implementation
+- [ ] roofline curves and stream benchmark
+- [ ] benchmarking on DCS
+  - [ ] update scripts to do all combinations, incl. compiler backends etc.
+- [ ] benchmarking on SCRTP
+  - [ ] get rustup, then run same script as dcs
+- [ ] start kokkos implementation
+- [ ] read perf book
+- [ ] Optional: raw ffi:mpi implementation?
+- [ ] Optional: iterators aren't zero cost abstraction
 
 GCC vs clang comparison? Could impact iterators
