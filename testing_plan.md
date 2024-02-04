@@ -23,6 +23,10 @@ directory structure of outputs named meaningfully and following YAML structure
     - Out of memory
   - Arbitrary input data generator/DSL?
 
+  - Cubic increasing, can extrapolate time for non-MPI versions
+  - MPI/rayon total number of parallel equal, as product of parallel threads * nodes
+  - Number of MPI nodes going up with powers of 2
+
 ## Versions
 
 ### Reference
@@ -53,3 +57,5 @@ directory structure of outputs named meaningfully and following YAML structure
 ## Build configurations/compile flags (optional?)
 
 ## Repeats/statistical methods
+
+- 5 drop top and bottom?
