@@ -27,6 +27,10 @@ remote_run_all: .venv/
 analyse_remote_runs: .venv/
 	@poetry run python3 src/analyse_remote_runs/main.py
 
+.PHONY: avon_remote_run
+avon_remote_run: .venv/
+	@poetry run python3 src/avon_remote_run/main.py
+
 ### Cleanup ###
 .PHONY: clean_cache
 clean_cache:
