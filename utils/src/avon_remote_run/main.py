@@ -7,48 +7,56 @@ from subprocess import PIPE as subprocess_PIPE
 from tempfile import NamedTemporaryFile
 from re import search as re_search
 
+BASH_SHEBANG = "#!/bin/sh\n"
 JOB_ID_REGEX = r"Submitted batch job (\d+)"
 
-# TODO: Switch to setting attributes then constructing with a getter on
-# sbatch contents to enforce order?
 class RunConfiguration:
     """A builder/runner for a run configuration"""
 
-    def __init__(self):
+    def __init__(self, run_command: str):
         """Initialise the run configuration file as a empty bash file."""
-        self.sbatch_contents = "#!/bin/sh\n"
+        self.name: str = ""
+        self.sbatch_config: dict[str, str] = {}
+        self.module_loads: list[str] = []
+        self.environment_variables: dict[str, str] = {}
+        self.display_environment: bool = True
+        self.directory: Path | None = None
+        self.build_commands: list[str] = []
+        self.run_command: str = run_command
+        self.args: str | None = None
 
-    def add_sbatch_config(self, config: dict[str, str]) -> None:
-        """Add sbatch flags to the run configuration file."""
-        for key, value in config.items():
-            self.sbatch_contents += f"#SBATCH --{key}={value}\n"
+    @property
+    def sbatch_contents(self) -> str:
+        """Construct the sbatch configuration for the run"""
+        sbatch_file = BASH_SHEBANG
 
-    def add_module_loads(self, modules: list[str]) -> None:
-        """Add module loads to the run configuration file."""
-        self.sbatch_contents += "\nmodule purge\n"
-        self.sbatch_contents += f"module load {' '.join(modules)}\n"
+        for key, value in self.sbatch_config.items():
+            sbatch_file += f"#SBATCH --{key}={value}\n"
 
-    def add_display_environment(self) -> None:
-        """Add displaying the environment to the run configuration file."""
-        self.sbatch_contents += "\necho '===== ENVIRONMENT ====='\n"
-        self.sbatch_contents += "lscpu\necho\n"
+        if len(self.module_loads) > 0:
+            sbatch_file += "module purge\n"
+            sbatch_file += f"module load {' '.join(self.module_loads)}\n"
 
-    def add_build_step(
-        self, commands: list[str], directory: Path | None = None
-    ) -> None:
-        """Add build commands to the run configuration file."""
-        self.sbatch_contents += "\necho '===== BUILD ====='\n"
-        if directory is not None:
-            self.sbatch_contents += f"cd {directory}\n"
-        self.sbatch_contents += "\n".join(commands) + "\n"
+        for key, value in self.environment_variables.items():
+            sbatch_file += f"export {key}={value}\n"
 
-    def add_run_step(self, command: str, args: str | None = None) -> None:
-        """Add run commands to the run configuration file."""
-        self.sbatch_contents += "\necho '===== RUN ====='\n"
-        self.sbatch_contents += f"time srun {command}"
-        if args is not None:
-            self.sbatch_contents += f" {args}"
-        self.sbatch_contents += "\n"
+        if self.display_environment:
+            sbatch_file += "\necho '===== ENVIRONMENT ====='\n"
+            sbatch_file += "lscpu\n"
+            sbatch_file += "echo\n"
+
+        sbatch_file += "\necho '===== BUILD ====='\n"
+        if self.directory is not None:
+            sbatch_file += f"cd {self.directory}\n"
+        sbatch_file += "\n".join(self.build_commands) + "\n"
+
+        sbatch_file += "\necho '===== RUN"
+        if self.name != "":
+            sbatch_file += f"{self.name} "
+        sbatch_file += " ====='\n"
+        sbatch_file += f"time srun {self.run_command} {self.args}\n"
+
+        return sbatch_file
 
     def __repr__(self) -> str:
         """Get the sbatch configuration file defining the run."""
@@ -68,17 +76,117 @@ class RunConfiguration:
             return int(job_id_search.group(1))
 
 
-def get_reference_impl(args: str) -> RunConfiguration:
+def get_cpp_impl() -> RunConfiguration:
+    """Get a run configuration for a generic C++ implementation."""
+    run = RunConfiguration("./test_HPCCG")
+    run.build_commands = ["make -j 8"]
+    return run
+
+
+def get_rust_impl() -> RunConfiguration:
+    """Get a run configuration for a generic C++ implementation."""
+    run = RunConfiguration("cargo run --release")
+    run.build_commands = ["cargo build --release"]
+    return run
+
+
+def get_cpp_reference_impl() -> RunConfiguration:
     """Build a run configuration for the reference implementation"""
-    run = RunConfiguration()
-    run.add_sbatch_config({"cpus-per-task": "48"})
-    run.add_module_loads(["GCC/11.3.0"])
-    run.add_display_environment()
-    run.add_build_step(["make -j 8"], directory=Path("../"))
-    run.add_run_step("./test_HPCCG", args)
+    run = get_cpp_impl()
+    run.sbatch_config = {
+        "nodes": "1",
+        "ntasks-per-node": "1",
+        "cpus-per-task": "1",
+        "mem-per-cpu": "3700",  # max on avon?
+    }
+    run.module_loads = ["GCC/11.3.0"]
+    run.directory = Path("../0_cpp_versions/0_ref")
+    return run
+
+
+def get_cpp_openmp_impl() -> RunConfiguration:
+    """Build a run configuration for the reference implementation"""
+    run = get_cpp_impl()
+    run.sbatch_config = {
+        "nodes": "1",
+        "ntasks-per-node": "1",
+        "cpus-per-task": "16",
+        "mem-per-cpu": "3700",  # max on avon?
+    }
+    run.environment_variables = {"OMP_NUM_THREADS": "16"}
+    run.module_loads = ["GCC/11.3.0"]
+    run.directory = Path("../0_cpp_versions/0_openmp")
+    return run
+
+
+def get_cpp_mpi_impl() -> RunConfiguration:
+    """Build a run configuration for the reference implementation"""
+    run = get_cpp_impl()
+    run.sbatch_config = {
+        "nodes": "2",
+        "ntasks-per-node": "8",
+        "cpus-per-task": "1",
+        "mem-per-cpu": "3700",  # max on avon?
+    }
+    run.module_loads = ["GCC/11.3.0", "OpenMPI/4.1.4"]
+    run.directory = Path("../0_cpp_versions/0_mpi")
+    return run
+
+
+def get_cpp_hybrid_impl() -> RunConfiguration:
+    """Build a run configuration for the reference implementation"""
+    run = get_cpp_impl()
+    run.sbatch_config = {
+        "nodes": "2",
+        "ntasks-per-node": "4",
+        "cpus-per-task": "2",
+        "mem-per-cpu": "3700",  # max on avon?
+    }
+    run.environment_variables = {"OMP_NUM_THREADS": "2"}
+    run.module_loads = ["GCC/11.3.0", "OpenMPI/4.1.4"]
+    run.directory = Path("../0_cpp_versions/0_hybrid")
+    return run
+
+
+def get_rust_reference_impl() -> RunConfiguration:
+    """Build a run configuration for the reference implementation"""
+    run = get_rust_impl()
+    run.sbatch_config = {
+        "nodes": "1",
+        "ntasks-per-node": "1",
+        "cpus-per-task": "1",
+        "mem-per-cpu": "3700",  # max on avon?
+    }
+    run.module_loads = ["GCC/11.3.0", "Clang/13.0.1"]
+    run.directory = Path("../5_iterators")
+    return run
+
+
+def get_rust_rayon_impl() -> RunConfiguration:
+    """Build a run configuration for the reference implementation"""
+    run = get_rust_impl()
+    run.sbatch_config = {
+        "nodes": "1",
+        "ntasks-per-node": "1",
+        "cpus-per-task": "16",
+        "mem-per-cpu": "3700",  # max on avon?
+    }
+    run.environment_variables = {"RAYON_NUM_THREADS": "16"}
+    run.module_loads = ["GCC/11.3.0", "Clang/13.0.1"]
+    run.directory = Path("../6_parallel")
     return run
 
 
 if __name__ == "__main__":
     for args in ["50 50 50"]:
-        print(get_reference_impl(args))
+        for run in [
+            get_cpp_reference_impl(),
+            get_cpp_openmp_impl(),
+            get_cpp_mpi_impl(),
+            get_cpp_hybrid_impl(),
+            get_rust_reference_impl(),
+            get_rust_rayon_impl()
+        ]:
+            run.args = args
+            print(run)
+            # run.run()
