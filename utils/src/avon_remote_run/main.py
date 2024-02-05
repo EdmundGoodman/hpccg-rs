@@ -1,69 +1,75 @@
 #!/usr/bin/env python3
 """A class for test configurations on batch compute."""
 
-from dataclasses import dataclass
 from pathlib import Path
 from subprocess import run as subprocess_run
+from subprocess import PIPE as subprocess_PIPE
 from tempfile import NamedTemporaryFile
 from re import search as re_search
 
 JOB_ID_REGEX = r"Submitted batch job (\d+)"
 
 
-@dataclass
 class RunConfiguration:
-    """A dataclass representing a batch compute job."""
+    """A builder/runner for a run configuration"""
 
-    directory: Path
-    build_command: str
-    run_command: Path
-    args: str
-    sbatch_config: dict[str, str]
-    modules: list[str]
+    def __init__(self):
+        """Initialise the run configuration file as a empty bash file."""
+        self.sbatch_contents = "#!/bin/sh\n"
 
-    def generate_sbatch_file(self) -> str:
-        """Create a .sbatch file from the run's configuration."""
-        sbatch_file = "#!/bin/sh\n"
+    def add_sbatch_config(self, config: dict[str, str]) -> None:
+        """Add sbatch flags to the run configuration file."""
+        for key, value in config.items():
+            self.sbatch_contents += f"#SBATCH --{key}={value}\n"
 
-        for key, value in self.sbatch_config.items():
-            sbatch_file += f"#SBATCH --{key}={value}\n"
+    def add_module_loads(self, modules: list[str]) -> None:
+        """Add module loads to the run configuration file."""
+        self.sbatch_contents += "\nmodule purge\n"
+        self.sbatch_contents += f"module load {' '.join(modules)}\n"
 
-        if len(self.modules) > 0:
-            sbatch_file += "\nmodule purge\n"
-            sbatch_file += f"module load {' '.join(self.modules)}\n"
+    def add_display_environment(self) -> None:
+        """Add displaying the environment to the run configuration file."""
+        self.sbatch_contents += "\necho '===== ENVIRONMENT ====='\n"
+        self.sbatch_contents += "lscpu\necho\n"
 
-        sbatch_file += "\necho '===== ENVIRONMENT ====='\n"
-        sbatch_file += "lscpu\n"
-        sbatch_file += "echo\n"
+    def add_build_step(
+        self, commands: list[str], directory: Path | None = None
+    ) -> None:
+        """Add build commands to the run configuration file."""
+        self.sbatch_contents += "\necho '===== BUILD ====='\n"
+        if directory is not None:
+            self.sbatch_contents += f"cd {directory}\n"
+        self.sbatch_contents += "\n".join(commands) + "\n"
 
-        sbatch_file += "\necho '===== BUILD & RUN ====='\n"
-        sbatch_file += f"cd {self.directory}\n"
-        sbatch_file += f"{self.build_command}\n"
-        sbatch_file += f"time srun ./{self.run_command} {self.args}\n"
+    def add_run_step(self, command: str) -> None:
+        """Add run commands to the run configuration file."""
+        self.sbatch_contents += "\necho '===== RUN ====='\n"
+        self.sbatch_contents += f"time srun {command}\n"
 
-        return sbatch_file
+    def __repr__(self) -> str:
+        """Get the sbatch configuration file defining the run."""
+        return self.sbatch_contents
 
     def run(self) -> int | None:
-        """Run the specified test on batch compute."""
+        """Run the specified run configuration."""
         with NamedTemporaryFile(suffix=".sbatch", dir=Path("./"), mode="w+") as sbatch_tmp:
-            sbatch_tmp.write(self.generate_sbatch_file())
+            sbatch_tmp.write(self.sbatch_contents)
             sbatch_tmp.flush()
-            result = subprocess_run(["sbatch", Path(sbatch_tmp.name)], capture_output=True, text=True)  # noqa: S603
-            job_id_search = re_search(JOB_ID_REGEX, str(result.output))
+            result = subprocess_run(
+                ["sbatch", Path(sbatch_tmp.name)], check=True, stdout=subprocess_PIPE
+            )  # noqa: S603
+            job_id_search = re_search(JOB_ID_REGEX, result.stdout.decode("utf-8"))
             if job_id_search is None:
                 return None
             return int(job_id_search.group(1))
 
 
 if __name__ == "__main__":
-    foo = RunConfiguration(
-        directory=Path("../"),
-        build_command="make -j 8",
-        run_command=Path("./test_HPCCG"),
-        args="50 50 50",
-        sbatch_config={
-            "cpus-per-task":"48"
-        },
-        modules=["GCC/11.3.0", "OpenMPI/4.1.4"]
-    )
-    print(foo.generate_sbatch_file())
+    run = RunConfiguration()
+    run.add_sbatch_config({"cpus-per-task": "48"})
+    run.add_module_loads(["GCC/11.3.0", "OpenMPI/4.1.4"])
+    run.add_display_environment()
+    run.add_build_step(["make -j 8"], directory=Path("../"))
+    run.add_run_step("./test_HPCCG 50 50 50")
+
+    print(run)
