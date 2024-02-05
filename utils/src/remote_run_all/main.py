@@ -5,10 +5,10 @@ from collections.abc import Iterator
 
 from configurations import (
     ORIGINAL,
+    TRANSLATIONS,
     generate_compare_translations_test_suite,
     generate_strong_scaling_test_suite,
     generate_weak_scaling_test_suite,
-    TRANSLATIONS
 )
 from test_configuration import TestConfiguration
 

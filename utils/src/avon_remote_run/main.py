@@ -2,16 +2,18 @@
 """A class for test configurations on batch compute."""
 
 from pathlib import Path
-from subprocess import run as subprocess_run
-from subprocess import PIPE as subprocess_PIPE
-from tempfile import NamedTemporaryFile
 from re import search as re_search
+from subprocess import PIPE
+from subprocess import run as subprocess_run
+from tempfile import NamedTemporaryFile
+from typing import Optional
 
 BASH_SHEBANG = "#!/bin/sh\n"
 JOB_ID_REGEX = r"Submitted batch job (\d+)"
 
+
 class RunConfiguration:
-    """A builder/runner for a run configuration"""
+    """A builder/runner for a run configuration."""
 
     def __init__(self, run_command: str):
         """Initialise the run configuration file as a empty bash file."""
@@ -20,14 +22,14 @@ class RunConfiguration:
         self.module_loads: list[str] = []
         self.environment_variables: dict[str, str] = {}
         self.display_environment: bool = True
-        self.directory: Path | None = None
+        self.directory: Optional[Path] = None
         self.build_commands: list[str] = []
         self.run_command: str = run_command
-        self.args: str | None = None
+        self.args: Optional[str] = None
 
     @property
     def sbatch_contents(self) -> str:
-        """Construct the sbatch configuration for the run"""
+        """Construct the sbatch configuration for the run."""
         sbatch_file = BASH_SHEBANG
 
         for key, value in self.sbatch_config.items():
@@ -62,14 +64,16 @@ class RunConfiguration:
         """Get the sbatch configuration file defining the run."""
         return self.sbatch_contents
 
-    def run(self) -> int | None:
+    def run(self) -> Optional[int]:
         """Run the specified run configuration."""
-        with NamedTemporaryFile(suffix=".sbatch", dir=Path("./"), mode="w+") as sbatch_tmp:
+        with NamedTemporaryFile(
+            suffix=".sbatch", dir=Path("./"), mode="w+"
+        ) as sbatch_tmp:
             sbatch_tmp.write(self.sbatch_contents)
             sbatch_tmp.flush()
             result = subprocess_run(
-                ["sbatch", Path(sbatch_tmp.name)], check=True, stdout=subprocess_PIPE
-            )  # noqa: S603
+                ["sbatch", Path(sbatch_tmp.name)], check=True, stdout=PIPE
+            )
             job_id_search = re_search(JOB_ID_REGEX, result.stdout.decode("utf-8"))
             if job_id_search is None:
                 return None
@@ -91,7 +95,7 @@ def get_rust_impl() -> RunConfiguration:
 
 
 def get_cpp_reference_impl() -> RunConfiguration:
-    """Build a run configuration for the reference implementation"""
+    """Build a run configuration for the reference implementation."""
     run = get_cpp_impl()
     run.sbatch_config = {
         "nodes": "1",
@@ -105,7 +109,7 @@ def get_cpp_reference_impl() -> RunConfiguration:
 
 
 def get_cpp_openmp_impl() -> RunConfiguration:
-    """Build a run configuration for the reference implementation"""
+    """Build a run configuration for the reference implementation."""
     run = get_cpp_impl()
     run.sbatch_config = {
         "nodes": "1",
@@ -120,7 +124,7 @@ def get_cpp_openmp_impl() -> RunConfiguration:
 
 
 def get_cpp_mpi_impl() -> RunConfiguration:
-    """Build a run configuration for the reference implementation"""
+    """Build a run configuration for the reference implementation."""
     run = get_cpp_impl()
     run.sbatch_config = {
         "nodes": "2",
@@ -134,7 +138,7 @@ def get_cpp_mpi_impl() -> RunConfiguration:
 
 
 def get_cpp_hybrid_impl() -> RunConfiguration:
-    """Build a run configuration for the reference implementation"""
+    """Build a run configuration for the reference implementation."""
     run = get_cpp_impl()
     run.sbatch_config = {
         "nodes": "2",
@@ -149,7 +153,7 @@ def get_cpp_hybrid_impl() -> RunConfiguration:
 
 
 def get_rust_reference_impl() -> RunConfiguration:
-    """Build a run configuration for the reference implementation"""
+    """Build a run configuration for the reference implementation."""
     run = get_rust_impl()
     run.sbatch_config = {
         "nodes": "1",
@@ -163,7 +167,7 @@ def get_rust_reference_impl() -> RunConfiguration:
 
 
 def get_rust_rayon_impl() -> RunConfiguration:
-    """Build a run configuration for the reference implementation"""
+    """Build a run configuration for the reference implementation."""
     run = get_rust_impl()
     run.sbatch_config = {
         "nodes": "1",
@@ -185,8 +189,7 @@ if __name__ == "__main__":
             get_cpp_mpi_impl(),
             get_cpp_hybrid_impl(),
             get_rust_reference_impl(),
-            get_rust_rayon_impl()
+            get_rust_rayon_impl(),
         ]:
             run.args = args
             print(run)
-            # run.run()

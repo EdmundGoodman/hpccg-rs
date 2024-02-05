@@ -10,8 +10,6 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
-
 plt.style.use("seaborn-v0_8")
 
 RESULTS_DIRECTORY: Path = Path("src/analyse_remote_runs/all_runs")
@@ -91,8 +89,6 @@ def main() -> None:
     """Analyse the specified remote runs."""
     data_series: dict[str, list[tuple[int, float]]] = {}
     for run_result in get_run_results():
-        # from functools import reduce
-        # size = reduce(lambda x, y: x * y, run_result.dimensions)
         size = run_result.dimensions[0]
         # Ignore some with missing data...
         if (
