@@ -9,7 +9,8 @@ from re import search as re_search
 
 JOB_ID_REGEX = r"Submitted batch job (\d+)"
 
-
+# TODO: Switch to setting attributes then constructing with a getter on
+# sbatch contents to enforce order?
 class RunConfiguration:
     """A builder/runner for a run configuration"""
 
@@ -41,10 +42,13 @@ class RunConfiguration:
             self.sbatch_contents += f"cd {directory}\n"
         self.sbatch_contents += "\n".join(commands) + "\n"
 
-    def add_run_step(self, command: str) -> None:
+    def add_run_step(self, command: str, args: str | None = None) -> None:
         """Add run commands to the run configuration file."""
         self.sbatch_contents += "\necho '===== RUN ====='\n"
-        self.sbatch_contents += f"time srun {command}\n"
+        self.sbatch_contents += f"time srun {command}"
+        if args is not None:
+            self.sbatch_contents += f" {args}"
+        self.sbatch_contents += "\n"
 
     def __repr__(self) -> str:
         """Get the sbatch configuration file defining the run."""
@@ -64,12 +68,17 @@ class RunConfiguration:
             return int(job_id_search.group(1))
 
 
-if __name__ == "__main__":
+def get_reference_impl(args: str) -> RunConfiguration:
+    """Build a run configuration for the reference implementation"""
     run = RunConfiguration()
     run.add_sbatch_config({"cpus-per-task": "48"})
-    run.add_module_loads(["GCC/11.3.0", "OpenMPI/4.1.4"])
+    run.add_module_loads(["GCC/11.3.0"])
     run.add_display_environment()
     run.add_build_step(["make -j 8"], directory=Path("../"))
-    run.add_run_step("./test_HPCCG 50 50 50")
+    run.add_run_step("./test_HPCCG", args)
+    return run
 
-    print(run)
+
+if __name__ == "__main__":
+    for args in ["50 50 50"]:
+        print(get_reference_impl(args))
