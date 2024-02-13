@@ -1,3 +1,6 @@
 [submodule "HPCCG"]
 	path = 0_cpp
 	url = https://github.com/EdmundGoodman/HPCCG
+[submodule "hpc-multibench"]
+	path = hpc-multibench
+	url = https://github.com/EdmundGoodman/hpc-multibench
