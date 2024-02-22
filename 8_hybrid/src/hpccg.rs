@@ -4,12 +4,12 @@ mod exchange_externals;
 pub mod make_local_matrix;
 pub mod mytimer;
 pub mod sparse_matrix;
-mod sparsmv;
+mod sparsemv;
 mod waxpby;
 
 pub mod hpccg_internals {
     pub use super::ddot::ddot;
-    pub use super::sparsmv::sparsemv;
+    pub use super::sparsemv::sparsemv;
     pub use super::waxpby::waxpby;
 }
 
@@ -21,7 +21,7 @@ use exchange_externals::exchange_externals;
 pub use make_local_matrix::make_local_matrix;
 pub use mytimer::mytimer;
 pub use sparse_matrix::SparseMatrix;
-use sparsmv::sparsemv;
+use sparsemv::sparsemv;
 use waxpby::waxpby;
 
 /// Store the start time for a code section.
