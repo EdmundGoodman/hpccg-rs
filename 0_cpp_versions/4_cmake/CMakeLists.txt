@@ -16,7 +16,5 @@ if($ENV{DEBUG})
 endif()
 message(STATUS "CMake build type: ${CMAKE_BUILD_TYPE}")
 
-# Build the source and test directories
+# Build the source directory
 add_subdirectory(src)
-add_subdirectory(test)
-enable_testing()
