@@ -2,14 +2,14 @@ pub mod compute_residual;
 mod ddot;
 mod exchange_externals;
 pub mod make_local_matrix;
-mod mytimer;
+pub mod mytimer;
 pub mod sparse_matrix;
-mod sparsemv;
+mod sparsmv;
 mod waxpby;
 
 pub mod hpccg_internals {
     pub use super::ddot::ddot;
-    pub use super::sparsemv::sparsemv;
+    pub use super::sparsmv::sparsemv;
     pub use super::waxpby::waxpby;
 }
 
@@ -18,9 +18,10 @@ use mpi::traits::*;
 pub use compute_residual::compute_residual;
 use ddot::ddot;
 use exchange_externals::exchange_externals;
-use mytimer::mytimer;
+pub use make_local_matrix::make_local_matrix;
+pub use mytimer::mytimer;
 pub use sparse_matrix::SparseMatrix;
-use sparsemv::sparsemv;
+use sparsmv::sparsemv;
 use waxpby::waxpby;
 
 /// Store the start time for a code section.
@@ -101,7 +102,7 @@ pub fn solver(
     tock(&t_total, &mut t_waxpby);
 
     tick(&mut t_total);
-    rtrans = ddot(r.len(), &r, &r, world);
+    rtrans = ddot(r.len(), &r, &r, &mut t_mpi_allreduce, world);
     tock(&t_total, &mut t_ddot);
 
     normr = rtrans.sqrt();
@@ -122,7 +123,7 @@ pub fn solver(
         } else {
             oldrtrans = rtrans;
             tick(&mut t_total);
-            rtrans = ddot(nrow, &r, &r, world);
+            rtrans = ddot(nrow, &r, &r, &mut t_mpi_allreduce, world);
             tock(&t_total, &mut t_ddot);
             let beta = rtrans / oldrtrans;
             tick(&mut t_total);
@@ -144,7 +145,7 @@ pub fn solver(
         tock(&t_total, &mut t_sparsemv);
 
         tick(&mut t_total);
-        let alpha = ddot(r.len(), &p, &Ap, world);
+        let alpha = ddot(r.len(), &p, &Ap, &mut t_mpi_allreduce, world);
         tock(&t_total, &mut t_ddot);
 
         let alpha = rtrans / alpha;
