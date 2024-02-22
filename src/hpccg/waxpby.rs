@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 /// A function to compute the sum of two scaled vectors.
 ///
 /// # Arguments
@@ -8,12 +10,12 @@
 /// * `y` - The second input vector.
 pub fn waxpby(_width: usize, alpha: f64, x: &[f64], beta: f64, y: &[f64]) -> Vec<f64> {
     if alpha == 1.0 {
-        x.iter().zip(y.iter()).map(|(x, y)| x + beta * y).collect()
+        x.par_iter().zip(y.par_iter()).map(|(x, y)| x + beta * y).collect()
     } else if beta == 1.0 {
-        x.iter().zip(y.iter()).map(|(x, y)| alpha * x + y).collect()
+        x.par_iter().zip(y.par_iter()).map(|(x, y)| alpha * x + y).collect()
     } else {
-        x.iter()
-            .zip(y.iter())
+        x.par_iter()
+            .zip(y.par_iter())
             .map(|(x, y)| alpha * x + beta * y)
             .collect()
     }

@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use std::cmp::Ordering;
 
 /// A method to compute the 1-norm difference between two vectors.
@@ -11,8 +12,8 @@ use std::cmp::Ordering;
 /// * `expected` - The vector of expected values.
 pub fn compute_residual(_width: usize, actual: &[f64], expected: &[f64]) -> f64 {
     actual
-        .iter()
-        .zip(expected.iter())
+        .par_iter()
+        .zip(expected.par_iter())
         .map(|(x, y)| (x - y).abs())
         // Need to account for f64 not being totally ordered (https://stackoverflow.com/a/50308360)
         .max_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Less))

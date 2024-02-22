@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use mpi::collective::SystemOperation;
 use mpi::traits::*;
 
@@ -20,9 +21,10 @@ pub fn ddot(
     world: &impl Communicator,
 ) -> f64 {
     let local_result: f64 = if std::ptr::eq(lhs, rhs) {
-        lhs.iter().map(|x| x * x).sum()
+        lhs.par_iter().map(|x| x * x).sum()
     } else {
-        lhs.iter().zip(rhs.iter()).map(|(x, y)| x * y).sum()
+        lhs.par_iter().zip(rhs.par_iter())
+            .map(|(x, y)| x * y).sum()
     };
 
     // TODO: Add another timer

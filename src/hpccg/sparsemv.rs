@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use super::SparseMatrix;
 
 /// Sparse matrix-vector multiplication
@@ -8,8 +9,8 @@ use super::SparseMatrix;
 pub fn sparsemv(matrix: &SparseMatrix, vector: &[f64]) -> Vec<f64> {
     matrix
         .row_start_inds
-        .iter()
-        .zip(matrix.nnz_in_row.iter())
+        .par_iter()
+        .zip(matrix.nnz_in_row.par_iter())
         .map(|(&start_ind, &cur_nnz)| {
             debug_assert!(start_ind + cur_nnz <= matrix.list_of_vals.len());
             debug_assert!(start_ind + cur_nnz <= matrix.list_of_inds.len());
