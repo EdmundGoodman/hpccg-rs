@@ -134,5 +134,8 @@ $(TARGET): $(TEST_OBJ)
 test:
 	@echo "Not implemented yet..."
 
+no_yaml:
+	@rm -f *.yaml
+
 clean:
 	@rm -f *.o  *~ $(TARGET) $(TARGET).exe test_HPCPCG 
