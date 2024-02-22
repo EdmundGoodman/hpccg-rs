@@ -26,14 +26,9 @@ if ($ENV{USE_MPI})
     target_compile_options(HPCCG PUBLIC -DUSING_MPI)
 endif()
 
-# Set debugging compile options
-if(CMAKE_BUILD_TYPE MATCHES "Debug")
-    target_compile_options(HPCCG PUBLIC -DDEBUG)
-    target_compile_options(HPCCG PUBLIC -Wall -Wextra)
-    target_compile_options(HPCCG PUBLIC -g -fno-omit-frame-pointer)
-    target_compile_options(HPCCG PUBLIC -fsanitize=address -fsanitize=undefined)
-    target_link_options(HPCCG PUBLIC -fsanitize=address -fsanitize=undefined)
-endif()
+# Set equivalent compiler optimisation flags
+target_compile_options(HPCCG PUBLIC -ftree-vectorize -ftree-vectorizer-verbose=2)
+# target_compile_options(HPCCG PUBLIC -Q --help=optimizers)
 
 # Print the compiler options set for debugging
 get_target_property(HPCCG_lib_CFLAGS HPCCG COMPILE_OPTIONS)
