@@ -24,9 +24,8 @@ if ($ENV{USE_MPI})
     target_compile_options(HPCCG PUBLIC -DUSING_MPI)
 endif()
 
-# TODO: Should probably try building kokkos with g++ so can use matching flags
 # Set equivalent compiler optimisation flags (not possible with clang...)
-# target_compile_options(HPCCG PUBLIC -ftree-vectorize -ftree-vectorizer-verbose=2)
+target_compile_options(HPCCG PUBLIC -ftree-vectorize -ftree-vectorizer-verbose=2)
 
 # Print the compiler options set for debugging
 get_target_property(HPCCG_lib_CFLAGS HPCCG COMPILE_OPTIONS)

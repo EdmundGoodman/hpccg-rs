@@ -7,8 +7,8 @@ SHELL := bash
 TARGET = test_HPCCG
 TEST_TARGET = Catch2Tests
 CMAKE_BUILD_DIR = build
-export CC=/usr/bin/clang++
-export CXX=/usr/bin/clang++
+export CC=/usr/bin/g++
+export CXX=/usr/bin/g++
 # NOTE: You will need to clean build when changing these values
 # export USE_MPI=1
 export USE_KOKKOS=1
