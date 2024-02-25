@@ -1,0 +1,5 @@
+[build]
+# This can be checked by comparing:
+# - `cargo rustc -- --print cfg`
+# - `cargo rustc -- --print cfg -C target-cpu=native`
+rustflags = ["-C", "target-cpu=native"]

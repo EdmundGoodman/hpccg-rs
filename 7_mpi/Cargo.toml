@@ -10,9 +10,6 @@ codegen-units = 1
 lto = "fat"
 panic = "abort"
 
-[build]
-rustflags = ["-C", "target-cpu=native"]
-
 [dependencies]
 libc = "0.2.149"
 mpi = { version = "0.7.0", features = ["derive"] }

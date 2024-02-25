@@ -10,9 +10,6 @@ codegen-units = 1
 lto = "fat"
 panic = "abort"
 
-[build]
-rustflags = ["-C", "target-cpu=native"]
-
 [dependencies]
 libc = "0.2.149"
 ndarray = { version = "0.15.6", features = ["rayon"] }
