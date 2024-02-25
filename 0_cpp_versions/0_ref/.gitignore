@@ -1,0 +1,54 @@
+### Project-specific excludes ###
+hpccg-*.yaml
+test_HPCCG*
+perf.data*
+
+
+### C++ excludes ###
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# CMake
+build/
+
+
+### VSCode IDE excludes ###
+.cache/
+
+
+### JetBrains IDE excludes ###
+.idea/workspace.xml
+.idea/usage.statistics.xml
+.idea/shelf/
+.idea/tasks.xml
+.idea/sonarlint/

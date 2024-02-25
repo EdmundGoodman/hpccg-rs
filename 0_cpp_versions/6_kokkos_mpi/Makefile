@@ -10,7 +10,7 @@ CMAKE_BUILD_DIR = build
 export CC=/usr/bin/g++
 export CXX=/usr/bin/g++
 # NOTE: You will need to clean build when changing these values
-# export USE_MPI=1
+export USE_MPI=1
 export USE_KOKKOS=1
 # export DEBUG=1
 
