@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 /// A method to compute the 1-norm difference between two vectors.
 ///
 /// The 1-norm difference of two vectors is the largest absolute difference
