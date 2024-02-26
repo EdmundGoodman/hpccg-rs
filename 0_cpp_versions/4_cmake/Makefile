@@ -16,7 +16,7 @@ export USE_MPI=1
 
 # Build targets
 .PHONY: all
-all: clean $(TARGET)
+all: $(TARGET)
 
 $(CMAKE_BUILD_DIR):
 	cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=1
