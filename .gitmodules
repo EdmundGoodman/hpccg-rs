@@ -1,5 +1,5 @@
 [submodule "HPCCG"]
-	path = 0_cpp
+	path = 0_cpp_versions/8_fork
 	url = https://github.com/EdmundGoodman/HPCCG
 [submodule "hpc-multibench"]
 	path = hpc-multibench
