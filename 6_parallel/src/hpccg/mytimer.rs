@@ -3,9 +3,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Alias function to allow switching timers.
 pub fn mytimer() -> f64 {
-    // wall_mytimer()
+    wall_mytimer()
     // sysconf_mytimer()
-    getrusage_mytimer()
+    // getrusage_mytimer()
 }
 
 /// A function to get the wall clock time in seconds since the UNIX epoch.
@@ -28,7 +28,8 @@ pub fn sysconf_mytimer() -> f64 {
     }
 }
 
-/// A function to get the CPU time (user and system) in seconds.v
+/// A function to get the CPU time (user and system) in seconds.
+#[allow(dead_code)]
 pub fn getrusage_mytimer() -> f64 {
     unsafe {
         let mut ruse: MaybeUninit<libc::rusage> = MaybeUninit::uninit();

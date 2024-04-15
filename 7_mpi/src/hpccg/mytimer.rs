@@ -5,7 +5,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub fn mytimer() -> f64 {
     // wall_mytimer()
     // sysconf_mytimer()
-    getrusage_mytimer()
+    // getrusage_mytimer()
+    getmpi_mytimer()
 }
 
 /// A function to get the wall clock time in seconds since the UNIX epoch.
@@ -28,7 +29,8 @@ pub fn sysconf_mytimer() -> f64 {
     }
 }
 
-/// A function to get the CPU time (user and system) in seconds.v
+/// A function to get the CPU time (user and system) in seconds.
+#[allow(dead_code)]
 pub fn getrusage_mytimer() -> f64 {
     unsafe {
         let mut ruse: MaybeUninit<libc::rusage> = MaybeUninit::uninit();
@@ -37,4 +39,10 @@ pub fn getrusage_mytimer() -> f64 {
         let micro_seconds = ruse.assume_init().ru_utime.tv_usec as f64;
         seconds + micro_seconds / 1_000_000.0
     }
+}
+
+/// A function to use MPI bindings to get the wall time in seconds.
+#[allow(dead_code)]
+pub fn getmpi_mytimer() -> f64 {
+    mpi::time()
 }
