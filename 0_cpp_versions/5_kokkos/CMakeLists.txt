@@ -8,7 +8,7 @@ project(
 set(CMAKE_CXX_STANDARD 17)
 
 # Specify global C++ compiler flags
-add_compile_options(-O3)
+add_compile_options(-g -O3 -DWALL)
 
 # Set Debug mode if an environment variable is set
 if($ENV{DEBUG})

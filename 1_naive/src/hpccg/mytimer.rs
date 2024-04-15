@@ -3,9 +3,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Alias function to allow switching timers.
 pub fn mytimer() -> f64 {
-    // wall_mytimer()
+    wall_mytimer()
     // sysconf_mytimer()
-    getrusage_mytimer()
+    // getrusage_mytimer()
 }
 
 /// A function to get the wall clock time in seconds since the UNIX epoch.
