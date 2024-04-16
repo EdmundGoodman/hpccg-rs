@@ -1,137 +1,31 @@
-# HPCCG-rs
+# hpccg-rs
 
-A rust translation of "High Performance Computing Conjugate Gradients: The original Mantevo miniapp".
+A rust translation of ["High Performance Computing Conjugate Gradients: The original Mantevo miniapp"](https://github.com/Mantevo/HPCCG).
 
 ## Project structure
 
 The top-level directories in the repository are different translated versions of the HPCCG algorithm.
 
-- `original` contains the code taken directly from HPCCG
-- `direct_serial` contains a direct serial rust translation, using the `Rc<RefCell<>>` construct to represent pointers
-- `datastruct_serial` contains a serial rust translation, where the datastructure is modified for convenience
-- `parallel` contains a parallelised rust translation, applying the `rayon` crate on top of `datastruct_serial`
+- `0_cpp_versions/` contains the code taken directly from HPCCG, split across various directories for different types of parallelism and build tooling
+- `1_naive/` contains a direct serial rust translation, using the interior mutability pattern of `Rc<RefCell<>>` to represent pointers
+- `2_indexed/` modifies the previous translation's sparse matrix data structure to use indexing over pointers
+- `3_single_indexed/` modifies the previous translation to re-use indexes to reduce memory bandwidth
+- `4_no_bounds_check/` modifies the previous translation to `unsafe`-ly avoid bound checks on vector indexing operations
+- `5_iterators/` modifies the previous translation to leverage iterators to minimise unsafe indexing operations
+- `6_parallel/` applies the `rayon` crate to leverage multi-threading over the previous translation
+- `7_mpi/` modifies `5_iterators/` to add the MPI optional functionality using the `rs-mpi` crate
+- `8_hybrid/` combines the previous two translations to leverage both multi-threading and MPI
 
-## TODO
+The `__misc/` directory contains other translations such as proof-of-concepts for the polyglotest equivalence checking
+approach, and a trial of the `sprs` crate for sparse matrix representations, which were not included in the
+performance analysis trials.
 
-- Unit tests for original HPCCG code
-- Modification to original HPCCG code to not be in CCS form
-  - Write blog about sparse matrix structures, related to HPCCG
-- Check raw generation to find memory not freed
-- PR improved docs for HPCCG
-- Think about what tooling flows would be helpful
-  - Characterising/understanding existing large codebases
-  - Unit testing for TDD
-  - Equivalence checking methodology
-- Check it iter is actually 0 cost abstraction by annotated code analysis (find the mov!)
-- correctness by comparing perf characteristics
-- macros for switching between rust and c++ unit test mode
+## Code provenance declaration
 
-converting pointer arithmetic to array indexing - does this incur a performance cost?
+All code in the `0_cpp_versions/` directory is duplicated or modified from Michael Heroux's implementation
+of HPCCG in C++ as part of the Mantevo Suite. Significant modifications to this codebase beyond Heroux's original
+implementation include adding documentation in the form of doxygen comments, moving build tooling from Makefiles
+to CMake, and writing a Kokkos implementation to replace OpenMP for shared memory parallelism.
 
-## New todo
-
-- PR fix to UK-MAC website broken links
-- HPCCG
-  - Finish MPI translation
-    - Clean up/TODOS
-    - Documentation/fixes in original HPCCG code?
-    - Consider additional using direct ffi::MPI ?
-  - Fix and PR docs and CMakelist for original code
-  - Investigate using sprs matrix library
-    - Done, no sparse/dense parallelisation so slow
-  - Investigate auto-vectorisation
-  - Investigate zero-cost abstractions
-  - Unit testing framework improve ergonomics
-  - Improve testing script to include uncertainties/memory characterisation
-  - Review good papers for more todos
-  - (Kokkos version in C++)
-  - (Investigate clustering techniques other than MPI)
-- MiniMD
-  - Translate single kernel, following workflow
-- polyglotest
-  - "a testing framework to empower pure TDD when translating rust to C++"
-  - should be a crate
-  - add a new cargo command `ffi_test` or similar
-    - like cargo mpirun
-    - runs unit tests on C++
-  - cargo test runs as normal (or adds ffi_test alongside integration/unit/doc?)
-  - Consider wrapper for autocxx for this purpose? macros in test?
-
-## Things to do this week
-
-- [x] rsmpi on DCS
-  - [x] works, reply to tech team
-  - [x] add timing code
-- [ ] rayon+mpi implementation
-- [ ] roofline curves and stream benchmark
-- [ ] benchmarking on DCS
-  - [ ] update scripts to do all combinations, incl. compiler backends etc.
-- [ ] benchmarking on SCRTP
-  - [ ] get rustup, then run same script as dcs
-- [ ] start kokkos implementation
-- [ ] read perf book
-- [ ] Optional: raw ffi:mpi implementation?
-- [ ] Optional: iterators aren't zero cost abstraction
-- [ ] Optional: work out what normr rtrans etc mean
-- [ ] GCC vs clang comparison? Could impact iterators
-
-## Testing plan
-
-Tool with YAML input to run and analyses tests
-
-- best practices for YAML schema?
-- what test harnesses exist already?
-
-matrix run can want different data in diff columns (e.g. dimensions x memory or dimensions + memory x time)
-
-groups of settings and generators for settings
-
-directory structure of outputs named meaningfully and following YAML structure
-
-### Input data / machine & build config
-
-- Groups
-  - Strong scaling
-  - Weak scaling
-  - Memory characterisation
-    - In cache
-    - In memory
-    - Out of memory
-  - Arbitrary input data generator/DSL?
-
-  - Cubic increasing, can extrapolate time for non-MPI versions
-  - MPI/rayon total number of parallel equal, as product of parallel threads * nodes
-  - Number of MPI nodes going up with powers of 2
-
-### Versions
-
-#### Reference
-
-- Serial
-- OpenMP only
-- MPI only
-- OpenMP + MPI
-- Roofline curve?
-
-#### Translated
-
-- Naive
-- Indexed
-- Single_indexed
-- No_bounds_check
-- Iterators
-- Parallel
-- MPI
-- MPI + Parallel
-
-(optional/todo)
-
-- (+ read perf book and get better version?)
-- sprs library
-- Kokkos
-
-### Build configurations/compile flags (optional?)
-
-### Repeats/statistical methods
-
-- 5 drop top and bottom?
+All other code is translated from scratch solely by Edmund Goodman, as an aspect of a third year project at the
+University of Warwick titled "Assessing the suitability of Rust for performant and productive implementations of HPC codebases''.
