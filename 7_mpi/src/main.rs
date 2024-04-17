@@ -12,6 +12,7 @@ mod tests;
 /// HPCCG conjugate gradient solver on the matrix and associated data.
 /// Finally, it print the result of the solver, and information about
 /// the performance of the computation.
+#[cfg(not(tarpaulin_include))]
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let (nx, ny, nz) = match &args.to_owned()[..] {

@@ -2,6 +2,7 @@ use std::mem::MaybeUninit;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Alias function to allow switching timers.
+#[cfg(not(tarpaulin_include))]
 pub fn mytimer() -> f64 {
     wall_mytimer()
     // sysconf_mytimer()
@@ -10,6 +11,7 @@ pub fn mytimer() -> f64 {
 
 /// A function to get the wall clock time in seconds since the UNIX epoch.
 #[allow(dead_code)]
+#[cfg(not(tarpaulin_include))]
 pub fn wall_mytimer() -> f64 {
     let tp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
     let seconds = tp.as_secs() as f64;
@@ -19,6 +21,7 @@ pub fn wall_mytimer() -> f64 {
 
 /// A function to get the system clock time in seconds.
 #[allow(dead_code)]
+#[cfg(not(tarpaulin_include))]
 pub fn sysconf_mytimer() -> f64 {
     unsafe {
         let mut ts: MaybeUninit<libc::tms> = MaybeUninit::uninit();
@@ -30,6 +33,7 @@ pub fn sysconf_mytimer() -> f64 {
 
 /// A function to get the CPU time (user and system) in seconds.
 #[allow(dead_code)]
+#[cfg(not(tarpaulin_include))]
 pub fn getrusage_mytimer() -> f64 {
     unsafe {
         let mut ruse: MaybeUninit<libc::rusage> = MaybeUninit::uninit();
