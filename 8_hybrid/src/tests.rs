@@ -24,9 +24,10 @@ mod unit_tests {
         let width = 3;
         let lhs = vec![1.0, 2.0, 3.0];
         let rhs = vec![3.0, 2.0, 1.0];
-        let result = ddot(width, &lhs, &rhs, &UNIVERSE.world());
+        let mut time_allreduce: f64 = 0.0;
+        let result = ddot(width, &lhs, &rhs, &mut time_allreduce, &UNIVERSE.world());
         assert_eq!(result, 10.0);
-        let result = ddot(width, &lhs, &lhs, &UNIVERSE.world());
+        let result = ddot(width, &lhs, &lhs, &mut time_allreduce, &UNIVERSE.world());
         assert_eq!(result, 14.0);
     }
 
@@ -118,12 +119,12 @@ mod unit_tests {
     #[serial] // Tests using MPI must not run concurrently
     fn test_solver() {
         let (nx, ny, nz) = (5, 5, 5);
-        let (matrix, guess, rhs, exact) =
+        let (mut matrix, guess, rhs, exact) =
             SparseMatrix::generate_matrix(nx, ny, nz, &UNIVERSE.world());
         let max_iter = 150;
         let tolerance = 5e-40;
         let (result, iterations, normr, _) = solver(
-            &matrix,
+            &mut matrix,
             &rhs,
             &guess,
             max_iter,
