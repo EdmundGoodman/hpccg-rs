@@ -5,8 +5,10 @@ use mpi::point_to_point::ReceiveFuture;
 use mpi::traits::*;
 use std::collections::HashMap;
 
-const MAX_EXTERNAL: usize = 100000;
-const MAX_NUM_MESSAGES: usize = 500;
+// const MAX_EXTERNAL: usize = 100000;
+// const MAX_NUM_MESSAGES: usize = 500;
+const MAX_EXTERNAL: usize = 2147483647;
+const MAX_NUM_MESSAGES: usize = 10000;
 const MAX_NUM_NEIGHBORS: usize = MAX_NUM_MESSAGES;
 
 const DEBUG: bool = false;
