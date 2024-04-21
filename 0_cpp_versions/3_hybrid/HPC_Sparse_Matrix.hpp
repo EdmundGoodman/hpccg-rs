@@ -46,8 +46,10 @@
 // These constants are upper bounds that might need to be changes for 
 // pathological matrices, e.g., those with nearly dense rows/columns.
 
-const int max_external = 100000;
-const int max_num_messages = 500;
+// const int max_external = 100000;
+// const int max_num_messages = 500;
+const int max_external = 2147483647;
+const int max_num_messages = 10000;
 const int max_num_neighbors = max_num_messages;
 
 
@@ -94,4 +96,3 @@ void destroySharedMemMatrix(HPC_Sparse_Matrix * &A);
 #endif
 
 #endif
-
